@@ -35,7 +35,7 @@ def import_from_file():
         file_path = filedialog.askopenfilename(title='Import')
         if file_path:
             with open(file_path) as f:
-                for i in f.read().splitlines():
+                for i in f.read().strip().splitlines():
                     patterns_list.insert('end', i)
     except Exception as err:
          show_error(err)
@@ -87,6 +87,7 @@ def create_excel_file(output_file,input_file,sheet_name, patterns):
             log_string = ''
             with open(input_file,encoding='utf-8') as f:
                 content = f.read()
+            assert output_file, 'The name of output file is required.'
             if not isfile(output_file):
                 wb = openpyxl.Workbook()
                 wb.save(output_file)
@@ -175,7 +176,9 @@ frm.pack()
 log_frm = tk.Frame(main_frm)
 yscroll_log = tk.Scrollbar(log_frm)
 xscroll_log = tk.Scrollbar(log_frm, orient='horizontal')
-log_text = tk.Text(log_frm,width=23, height=10, font = 'TkTextFont', wrap = 'none', yscrollcommand=yscroll_log.set, xscrollcommand=xscroll_log.set)
+log_text = tk.Text(log_frm,width=23, height=10, font = 'TkTextFont', wrap = 'none', 
+                   yscrollcommand=yscroll_log.set, xscrollcommand=xscroll_log.set,takefocus=True,
+                   highlightcolor='black',highlightthickness=1)
 yscroll_log.config(command=log_text.yview)
 xscroll_log.config(command=log_text.xview)
 log_text.insert('end', 'log ...')
@@ -214,13 +217,14 @@ patterns_list_frm.grid(row=2,column=1, sticky='s')
 menu  = create_context_menu()
 patterns_list.bind('<Button-3>', show_menu)
 patterns_list.bind('<App>', lambda event : show_menu(event, True))
-input_file_entry.focus_set()
 
 btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5',
-                        command=lambda : create_excel_file(output_file_entry.get(), input_file_entry.get(), sheet_name_entry.get(), set_patterns(patterns_list.get(0,'end')))
+                        command=lambda : create_excel_file(output_file_entry.get(), input_file_entry.get(), sheet_name_entry.get(), 
+                        set_patterns(patterns_list.get(0,'end')))
                         , cursor='hand2')
 btn_convert.bind('<Enter>', lambda event : btn_convert.config(bg = '#0092ff'))
 btn_convert.bind('<Leave>', lambda event : btn_convert.config(bg = '#0080e5'))
 btn_convert.bind('<Return>', lambda event : btn_convert.invoke())
 btn_convert.grid(row=0,column=1)
+
 window.mainloop()
