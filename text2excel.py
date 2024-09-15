@@ -218,6 +218,8 @@ menu  = create_context_menu()
 patterns_list.bind('<Button-3>', show_menu)
 patterns_list.bind('<App>', lambda event : show_menu(event, True))
 
+input_file_entry.focus_set()
+
 btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5',
                         command=lambda : create_excel_file(output_file_entry.get(), input_file_entry.get(), sheet_name_entry.get(), 
                         set_patterns(patterns_list.get(0,'end')))
