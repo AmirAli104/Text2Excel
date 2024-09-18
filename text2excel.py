@@ -28,7 +28,8 @@ def copy_pattern(all=False):
     if all:
         window.clipboard_append('\n'.join(patterns_list.get(0,'end')))
     else:
-        window.clipboard_append(patterns_list.get(patterns_list.curselection()))
+        selected = patterns_list.curselection()
+        window.clipboard_append('\n'.join(patterns_list.get(selected[0],selected[-1])))
 
 def import_from_file():
     try:
@@ -50,6 +51,10 @@ def export_to_file():
     except Exception as err:
         show_error(err)
 
+def delete_selected():
+    selected = patterns_list.curselection()
+    patterns_list.delete(selected[0],selected[-1])
+
 def edit_selected():
     index = patterns_list.curselection()
     value = patterns_list.get(index)
@@ -57,6 +62,14 @@ def edit_selected():
     if new_value:
         patterns_list.delete(index)
         patterns_list.insert(index, new_value)
+    
+def add_pattern(insert=False):
+    new_pattern = askstring(title=APP_TITLE, prompt='Enter the pattern: ')
+    if insert:
+        new_index = patterns_list.curselection()[0]
+        patterns_list.insert(new_index,new_pattern)
+    else:
+        patterns_list.insert('end',new_pattern)
 
 def set_patterns(patterns):
     l=[]
@@ -67,20 +80,6 @@ def set_patterns(patterns):
             x = get_column_letter(x)
         l.append((str(x),y))
     return l
-
-def show_menu(event, app=False):
-    if patterns_list.curselection():
-        menu.entryconfig(1, state='active')
-        menu.entryconfig(2,state = 'active')
-        menu.entryconfig(3,state = 'active')
-    else:
-        menu.entryconfig(1, state='disabled')
-        menu.entryconfig(2,state = 'disabled')
-        menu.entryconfig(3,state = 'disabled')
-    if app:
-        menu.tk_popup(patterns_list.winfo_rootx()+100,patterns_list.winfo_rooty()+100)
-    else:
-        menu.tk_popup(event.x_root, event.y_root)
 
 def create_excel_file(output_file,input_file,sheet_name, patterns):
         try:
@@ -138,12 +137,36 @@ def create_excel_file(output_file,input_file,sheet_name, patterns):
 
         except Exception as err:
              show_error(err)
+def show_menu(event, app=False):
+    selected = patterns_list.curselection()
+    states = list()
+    if selected:
+        if len(selected)>1:
+            for i in range(1,3):
+                states.append((i,'disabled'))
+            for i in range(3,5):
+                states.append((i,'active'))
+        else:
+            for i in range(1,5):
+                states.append((i,'active'))
+    else:
+        for i in range(1,5):
+            states.append((i,'disabled'))
+
+    for i,state in states:
+       menu.entryconfig(i, state=state)
+
+    if app:
+        menu.tk_popup(patterns_list.winfo_rootx()+100,patterns_list.winfo_rooty()+100)
+    else:
+        menu.tk_popup(event.x_root, event.y_root)
 
 def create_context_menu():
      menu = tk.Menu(tearoff=False)
-     menu.add_command(label='Add Pattern', command=lambda : patterns_list.insert('end',askstring(title=APP_TITLE, prompt='Enter the pattern: ')))
+     menu.add_command(label='Add Pattern', command=add_pattern)
+     menu.add_command(label='Insert Pattern',command=lambda : add_pattern(True))
      menu.add_command(label='Edit selected', command=edit_selected)
-     menu.add_command(label='Delete selected', command=lambda : patterns_list.delete(patterns_list.curselection()))
+     menu.add_command(label='Delete selected', command=delete_selected)
      menu.add_command(label='Copy selected', command=lambda : copy_pattern())
      menu.add_command(label='Delete All', command=lambda : patterns_list.delete(0,'end'))
      menu.add_command(label='Copy All', command=lambda : copy_pattern(True))
@@ -205,7 +228,8 @@ patterns_list_frm = tk.Frame(bd = 10)
 yscroll_pl = tk.Scrollbar(patterns_list_frm)
 xscroll_pl = tk.Scrollbar(patterns_list_frm, orient='horizontal')
 pattern_lbl = tk.Label(patterns_list_frm,text='Patterns:')
-patterns_list = tk.Listbox(patterns_list_frm,width=25,height=13, yscrollcommand=yscroll_pl.set, xscrollcommand=xscroll_pl.set)
+patterns_list = tk.Listbox(patterns_list_frm,width=25,height=13, yscrollcommand=yscroll_pl.set, 
+                           xscrollcommand=xscroll_pl.set,selectmode='extended')
 xscroll_pl.config(command=patterns_list.xview)
 yscroll_pl.config(command=patterns_list.yview)
 pattern_lbl.grid(row=0,column=0, sticky='w')
