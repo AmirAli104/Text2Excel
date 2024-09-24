@@ -221,9 +221,9 @@ def create_entry_menu(widget,is_file_entry=True):
     menu.add_command(label='Copy', accelerator='Ctrl+C',command=lambda : widget.event_generate('<<Copy>>'))
     menu.add_command(label='Paste', accelerator='Ctrl+V',command=lambda : widget.event_generate('<<Paste>>'))
     menu.add_command(label='Cut', accelerator='Ctrl+X',command=lambda : widget.event_generate('<<Cut>>'))
+    menu.add_separator()
     menu.add_command(label='Clear',accelerator='Ctrl+Shift+C',command=lambda : widget.delete(0,'end'))
     if is_file_entry:
-        menu.add_separator()
         menu.add_command(label='Browse',command=lambda : browse_files(widget))
     return menu
 
