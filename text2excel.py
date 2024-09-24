@@ -6,8 +6,25 @@ from os.path import isfile
 from tkinter.simpledialog import askstring
 
 APP_TITLE = 'Text2Excel'
+LOG_DEFAULT = 'log ...'
 
 show_error = lambda err : messagebox.showerror(title=APP_TITLE, message=err)
+
+def browse_files(widget):
+    file_path = filedialog.askopenfilename(title='Browse')
+    if file_path:
+        widget.delete(0,'end')
+        widget.insert('end',file_path)
+
+def copy_log():
+    window.clipboard_clear()
+    window.clipboard_append(log_text.get('1.0','end'))
+
+def clear_log():
+    log_text.config(state='normal')
+    log_text.delete('1.0','end')
+    log_text.insert('end',LOG_DEFAULT)
+    log_text.config(state='disabled')
 
 def find_max(wb, index, sheet_name):
     if col_var.get():
@@ -95,16 +112,16 @@ def create_excel_file(output_file,input_file,sheet_name, patterns):
 
             wb = openpyxl.load_workbook(output_file)
 
-            try:
-                sheet=wb[sheet_name]
-            except:
-                 sheet = wb.create_sheet(sheet_name)
+            if sheet_name in wb.sheetnames:
+                sheet = wb[sheet_name]
+            else:
+                sheet = wb.create_sheet(sheet_name)
 
             i=1
 
             if not exact_var.get():
                 if col_var.get():
-                    max_index=sheet.max_row
+                    max_index = sheet.max_row
                 else:
                     max_index = sheet.max_column
             else:
@@ -137,34 +154,51 @@ def create_excel_file(output_file,input_file,sheet_name, patterns):
 
         except Exception as err:
              show_error(err)
-def show_menu(event, app=False):
+def show_patterns_menu(event, app=False):
     selected = patterns_list.curselection()
     states = list()
     if selected:
         if len(selected)>1:
-            for i in range(1,3):
-                states.append((i,'disabled'))
-            for i in range(3,5):
-                states.append((i,'active'))
-        else:
-            for i in range(1,5):
-                states.append((i,'active'))
-    else:
-        for i in range(1,5):
-            states.append((i,'disabled'))
+            for i in (1,3):
+                patterns_menu.entryconfig(i,state='disabled')
+            
+            for i in range(4,6):
+                patterns_menu.entryconfig(i,state='active')
 
-    for i,state in states:
-       menu.entryconfig(i, state=state)
+        else:
+            patterns_menu.entryconfig(1,state='active')
+            for i in range(3,6):
+                patterns_menu.entryconfig(i,state='active')
+    else:
+        patterns_menu.entryconfig(1,state='disabled')
+        for i in range(3,6):
+            patterns_menu.entryconfig(i,state='disabled')
 
     if app:
-        menu.tk_popup(patterns_list.winfo_rootx()+100,patterns_list.winfo_rooty()+100)
+        patterns_menu.tk_popup(patterns_list.winfo_rootx()+100,patterns_list.winfo_rooty()+100)
     else:
-        menu.tk_popup(event.x_root, event.y_root)
+        patterns_menu.tk_popup(event.x_root, event.y_root)
 
-def create_context_menu():
+def show_entry_menu(menu,event,app=False):
+    if window.focus_get() == event.widget:
+        for i in range(4):
+            menu.entryconfig(i,state='active')
+    else:
+        for i in range(4):
+            menu.entryconfig(i,state='disabled')
+    if app:
+        if event.widget == sheet_name_entry:
+            menu.tk_popup(event.widget.winfo_rootx()+50,event.widget.winfo_rooty()+25)
+        else:
+            menu.tk_popup(event.widget.winfo_rootx()+100,event.widget.winfo_rooty()+25)
+    else:
+        menu.tk_popup(event.x_root,event.y_root)
+
+def create_patterns_menu():
      menu = tk.Menu(tearoff=False)
      menu.add_command(label='Add Pattern', command=add_pattern)
      menu.add_command(label='Insert Pattern',command=lambda : add_pattern(True))
+     menu.add_separator()
      menu.add_command(label='Edit selected', command=edit_selected)
      menu.add_command(label='Delete selected', command=delete_selected)
      menu.add_command(label='Copy selected', command=lambda : copy_pattern())
@@ -174,6 +208,24 @@ def create_context_menu():
      menu.add_command(label='Import from file', command=import_from_file)
      menu.add_command(label='Export to file', command=export_to_file)
      return menu
+
+def create_log_menu():
+    menu = tk.Menu(tearoff=False)
+    menu.add_command(label='Copy log',command=copy_log)
+    menu.add_command(label='Clear log',command=clear_log)
+    return menu
+
+def create_entry_menu(widget,is_file_entry=True):
+    menu = tk.Menu(tearoff=False)
+    menu.add_command(label='Select All', accelerator='Ctrl+A',command=lambda : widget.select_range(0,'end'))
+    menu.add_command(label='Copy', accelerator='Ctrl+C',command=lambda : widget.event_generate('<<Copy>>'))
+    menu.add_command(label='Paste', accelerator='Ctrl+V',command=lambda : widget.event_generate('<<Paste>>'))
+    menu.add_command(label='Cut', accelerator='Ctrl+X',command=lambda : widget.event_generate('<<Cut>>'))
+    menu.add_command(label='Clear',accelerator='Ctrl+Shift+C',command=lambda : widget.delete(0,'end'))
+    if is_file_entry:
+        menu.add_separator()
+        menu.add_command(label='Browse',command=lambda : browse_files(widget))
+    return menu
 
 window =tk.Tk()
 window.title(APP_TITLE)
@@ -204,7 +256,7 @@ log_text = tk.Text(log_frm,width=23, height=10, font = 'TkTextFont', wrap = 'non
                    highlightcolor='black',highlightthickness=1)
 yscroll_log.config(command=log_text.yview)
 xscroll_log.config(command=log_text.xview)
-log_text.insert('end', 'log ...')
+log_text.insert('end', LOG_DEFAULT)
 log_text.config(state='disabled')
 log_text.grid(row=0,column=0)
 xscroll_log.grid(row=1,column=0, pady=(0,10), sticky='we')
@@ -238,9 +290,29 @@ xscroll_pl.grid(row=2,column=0, sticky='we')
 yscroll_pl.grid(row=1,column=1,sticky='ns')
 patterns_list_frm.grid(row=2,column=1, sticky='s')
 
-menu  = create_context_menu()
-patterns_list.bind('<Button-3>', show_menu)
-patterns_list.bind('<App>', lambda event : show_menu(event, True))
+
+input_file_menu = create_entry_menu(input_file_entry)
+output_file_menu = create_entry_menu(output_file_entry)
+sheet_name_menu = create_entry_menu(sheet_name_entry,False)
+patterns_menu  = create_patterns_menu()
+log_menu = create_log_menu()
+
+patterns_list.bind('<Button-3>', show_patterns_menu)
+patterns_list.bind('<App>', lambda event : show_patterns_menu(event, True))
+
+log_text.bind('<Button-3>',lambda event : log_menu.tk_popup(event.x_root,event.y_root))
+log_text.bind('<App>',lambda event : log_menu.tk_popup(log_text.winfo_rootx()+100,log_text.winfo_rooty()+100))
+
+input_file_entry.bind('<Button-3>',lambda event : show_entry_menu(input_file_menu,event))
+input_file_entry.bind('<App>',lambda event : show_entry_menu(input_file_menu,event,True))
+
+output_file_entry.bind('<Button-3>',lambda event : show_entry_menu(output_file_menu,event))
+output_file_entry.bind('<App>',lambda event : show_entry_menu(output_file_menu,event,True))
+
+sheet_name_entry.bind('<Button-3>', lambda event : show_entry_menu(sheet_name_menu,event))
+sheet_name_entry.bind('<App>',lambda event : show_entry_menu(sheet_name_menu,event,True))
+
+window.bind_class('TEntry','<Control-C>',lambda event : event.widget.delete(0,'end'))
 
 input_file_entry.focus_set()
 
