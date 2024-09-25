@@ -18,7 +18,11 @@ def browse_files(widget):
 
 def copy_log():
     window.clipboard_clear()
-    window.clipboard_append(log_text.get('1.0','end'))
+    try:
+        data = log_text.selection_get()
+    except tk.TclError:
+        data = log_text.get('1.0','end')
+    window.clipboard_append(data)
 
 def clear_log():
     log_text.config(state='normal')
@@ -154,6 +158,19 @@ def create_excel_file(output_file,input_file,sheet_name, patterns):
 
         except Exception as err:
              show_error(err)
+
+def show_log_text_menu(event,app=False):
+    if log_text.tag_ranges('sel'):
+        text='Copy selected'
+    else:
+        text='Copy log'
+    log_menu.entryconfig(0,label=text)
+
+    if not app:
+        log_menu.tk_popup(event.x_root,event.y_root)
+    else:
+        log_menu.tk_popup(log_text.winfo_rootx()+100,log_text.winfo_rooty()+100)
+
 def show_patterns_menu(event, app=False):
     selected = patterns_list.curselection()
     states = list()
@@ -300,8 +317,8 @@ log_menu = create_log_menu()
 patterns_list.bind('<Button-3>', show_patterns_menu)
 patterns_list.bind('<App>', lambda event : show_patterns_menu(event, True))
 
-log_text.bind('<Button-3>',lambda event : log_menu.tk_popup(event.x_root,event.y_root))
-log_text.bind('<App>',lambda event : log_menu.tk_popup(log_text.winfo_rootx()+100,log_text.winfo_rooty()+100))
+log_text.bind('<Button-3>',lambda event : show_log_text_menu(event))
+log_text.bind('<App>',lambda event : lambda : show_log_text_menu(event,True))
 
 input_file_entry.bind('<Button-3>',lambda event : show_entry_menu(input_file_menu,event))
 input_file_entry.bind('<App>',lambda event : show_entry_menu(input_file_menu,event,True))
@@ -315,6 +332,8 @@ sheet_name_entry.bind('<App>',lambda event : show_entry_menu(sheet_name_menu,eve
 window.bind_class('TEntry','<Control-C>',lambda event : event.widget.delete(0,'end'))
 
 input_file_entry.focus_set()
+
+log_text.bind('<FocusOut>',lambda event : log_text.tag_remove('sel','1.0','end'))
 
 btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5',
                         command=lambda : create_excel_file(output_file_entry.get(), input_file_entry.get(), sheet_name_entry.get(), 
