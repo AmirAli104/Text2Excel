@@ -166,10 +166,11 @@ def show_log_text_menu(event,app=False):
         text='Copy log'
     log_menu.entryconfig(0,label=text)
 
-    if not app:
-        log_menu.tk_popup(event.x_root,event.y_root)
-    else:
+    if app:
         log_menu.tk_popup(log_text.winfo_rootx()+100,log_text.winfo_rooty()+100)
+    else:
+        log_menu.tk_popup(event.x_root,event.y_root)
+        
 
 def show_patterns_menu(event, app=False):
     selected = patterns_list.curselection()
@@ -318,7 +319,7 @@ patterns_list.bind('<Button-3>', show_patterns_menu)
 patterns_list.bind('<App>', lambda event : show_patterns_menu(event, True))
 
 log_text.bind('<Button-3>',lambda event : show_log_text_menu(event))
-log_text.bind('<App>',lambda event : lambda : show_log_text_menu(event,True))
+log_text.bind('<App>',lambda event : show_log_text_menu(event,True))
 
 input_file_entry.bind('<Button-3>',lambda event : show_entry_menu(input_file_menu,event))
 input_file_entry.bind('<App>',lambda event : show_entry_menu(input_file_menu,event,True))
@@ -341,7 +342,6 @@ btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5
                         , cursor='hand2')
 btn_convert.bind('<Enter>', lambda event : btn_convert.config(bg = '#0092ff'))
 btn_convert.bind('<Leave>', lambda event : btn_convert.config(bg = '#0080e5'))
-btn_convert.bind('<Return>', lambda event : btn_convert.invoke())
 btn_convert.grid(row=0,column=1)
 
 window.mainloop()
