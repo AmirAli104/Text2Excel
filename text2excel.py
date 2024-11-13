@@ -230,7 +230,7 @@ def show_entry_menu(menu,event,app=False):
 
 def create_patterns_menu():
      menu = tk.Menu(tearoff=False,**menu_color_args)
-     menu.add_command(label='Add Pattern', command=add_pattern,accelerator='Ctrl+A')
+     menu.add_command(label='Add Pattern', command=add_pattern,accelerator='Ctrl+Shift+A')
      menu.add_command(label='Insert Pattern',command=insert_pattern,accelerator='Ctrl+I')
      menu.add_separator()
      menu.add_command(label='Edit selected', command=edit_selected,accelerator='F2')
@@ -362,10 +362,11 @@ input_file_entry.focus_set()
 
 log_text.bind('<FocusOut>',lambda event : log_text.tag_remove('sel','1.0','end'))
 
-patterns_list.bind('<Control-a>',add_pattern)
+patterns_list.bind('<Control-A>',add_pattern)
 patterns_list.bind('<Control-i>',insert_pattern)
 patterns_list.bind('<F2>',edit_selected)
 patterns_list.bind('<Delete>',delete_selected)
+patterns_list.bind('<Control-d>',delete_selected)
 patterns_list.bind('<Control-c>',copy_pattern)
 patterns_list.bind('<Control-D>',delete_all)
 patterns_list.bind('<Control-C>',lambda event : copy_pattern(all=True))
