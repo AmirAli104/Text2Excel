@@ -6,7 +6,7 @@ from os.path import isfile
 from tkinter.simpledialog import askstring
 
 APP_TITLE = 'Text2Excel'
-
+ENCODING = 'utf-8-sig'
 LOG_DEFAULT = 'log ...'
 
 menu_color_args = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
@@ -53,7 +53,7 @@ def import_from_file(event=None):
     try:
         file_path = filedialog.askopenfilename(title='Import')
         if file_path:
-            with open(file_path) as f:
+            with open(file_path, encoding=ENCODING) as f:
                 for i in f.read().strip().splitlines():
                     patterns_list.insert('end', i)
     except Exception as err:
@@ -121,7 +121,7 @@ def find_max(wb, index, sheet_name):
 def create_excel_file(output_file,input_file,sheet_name, patterns):
         try:
             log_string = ''
-            with open(input_file,encoding='utf-8') as f:
+            with open(input_file,encoding=ENCODING) as f:
                 content = f.read()
             assert output_file, 'The name of output file is required.'
             if not isfile(output_file):
@@ -377,6 +377,7 @@ btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5
                         command=lambda : create_excel_file(output_file_entry.get(), input_file_entry.get(), sheet_name_entry.get(), 
                         set_patterns(patterns_list.get(0,'end')))
                         , cursor='hand2')
+
 btn_convert.bind('<Enter>', lambda event : btn_convert.config(bg = '#0092ff'))
 btn_convert.bind('<Leave>', lambda event : btn_convert.config(bg = '#0080e5'))
 btn_convert.grid(row=0,column=1)
