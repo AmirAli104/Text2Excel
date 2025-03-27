@@ -1,8 +1,7 @@
-import openpyxl, re
+import openpyxl, re, os, csv
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 from openpyxl.utils import get_column_letter
-from os.path import isfile
 from tkinter.simpledialog import askstring
 
 APP_TITLE = 'Text2Excel'
@@ -11,7 +10,7 @@ LOG_DEFAULT = 'log ...'
 
 menu_color_args = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
 
-def ask():
+def get_pattern():
     return askstring(title=APP_TITLE,prompt='Enter the pattern:')
 
 def show_error(err):
@@ -84,25 +83,23 @@ def edit_selected(event=None):
             patterns_list.insert(index, new_value)
     
 def add_pattern(event=None):
-    new_pattern = ask()
+    new_pattern = get_pattern()
     patterns_list.insert('end',new_pattern)
 
 def insert_pattern(event=None):
     selected = patterns_list.curselection()
     if len(selected) == 1:
-        new_pattern = ask()
+        new_pattern = get_pattern()
         patterns_list.insert(selected[0],new_pattern)
 
 
 def set_patterns(patterns):
-    l=[]
-    for x,y in enumerate(patterns, 1):
-        if not '?P<item>' in y:
-            y = '(?P<item>' + y + ')'
-        if col_var.get():
-            x = get_column_letter(x)
-        l.append((str(x),y))
-    return l
+    patterns_list=[]
+    for index,pattern in enumerate(patterns, 1):
+        if not '?P<item>' in pattern:
+            pattern = '(?P<item>' + pattern + ')'
+        patterns_list.append((index,pattern))
+    return patterns_list
 
 def find_max(wb, index, sheet_name):
     if col_var.get():
@@ -118,16 +115,44 @@ def find_max(wb, index, sheet_name):
                 col = i[0].column
         return col
 
-def create_excel_file(output_file,input_file,sheet_name, patterns):
-        try:
+def remove_indices_from_patterns(patterns):
+    patterns_list = []
+    for pattern in patterns:
+        patterns_list.append(pattern[1])
+    return patterns_list
+
+def create_csv_file(output_file,patterns,content):
+    log_string = ''
+
+    patterns = remove_indices_from_patterns(patterns)
+
+    extracted_data = []
+    for pattern in patterns:
+        result = tuple(re.findall(pattern,content))
+        log_string += '\n'.join(result)
+        extracted_data.append(result)
+    if col_var.get():
+        extracted_data = tuple(zip(*extracted_data))
+
+    with open(output_file,'a',newline='',encoding=ENCODING) as f:
+        writer = csv.writer(f)
+        writer.writerows(extracted_data)
+
+    return log_string
+
+def pattern_number_to_letter(patterns):
+    patterns_list = []
+    for i in range(len(patterns)):
+        patterns_list.append( (get_column_letter(patterns[i][0]),patterns[i][1]) )
+    return patterns_list
+
+def creat_excel_file(output_file,sheet_name,patterns,content):
             log_string = ''
-            with open(input_file,encoding=ENCODING) as f:
-                content = f.read()
-            assert output_file, 'The name of output file is required.'
-            if not isfile(output_file):
+            if not os.path.isfile(output_file):
                 wb = openpyxl.Workbook()
                 wb.save(output_file)
                 wb.close()
+            
             sheet_name = sheet_name.title()
 
             wb = openpyxl.load_workbook(output_file)
@@ -146,34 +171,59 @@ def create_excel_file(output_file,input_file,sheet_name, patterns):
                     max_index = sheet.max_column
             else:
                 max_index = find_max(wb,i, sheet_name)
+                        
+            if col_var.get():
+                patterns = pattern_number_to_letter(patterns)
 
             if col_var.get():
-                get_index = lambda x, y : x + str(y)
+                get_cell = lambda pattern_number, index : pattern_number + str(index)
             else:
-                get_index = lambda x, y : get_column_letter(y) + x
+                get_cell = lambda pattern_number, index : get_column_letter(index) + str(pattern_number)
 
             index=max_index+1
+
             for pattern in patterns:
                 for item in re.finditer(pattern[1],content):
                     log_string += item.group('item') + '\n'
-                    sheet[get_index(pattern[0], index)] = item.group('item')
+                    sheet[get_cell(pattern[0], index)] = item.group('item')
                     index+=1
+
                 i+=1
                 if exact_var.get():
                     max_index = find_max(wb,i, sheet_name)
                 index=max_index+1
 
             wb.save(output_file)
+            wb.close()
+
+            return log_string
+
+def extract_data(output_file,input_file,sheet_name, patterns):
+        # try:
+            with open(input_file,encoding=ENCODING) as f:
+                content = f.read()
+            assert output_file, 'The name of output file is required.'
+            
+            output_file_extention = os.path.splitext(output_file)[1]
+
+            if output_file_extention in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
+                log_string = creat_excel_file(output_file,sheet_name,patterns,content)
+
+            elif output_file_extention == '.csv':
+                log_string = create_csv_file(output_file,patterns,content)
+
+            else:
+                show_error('This output file format is not supported.')
+
             log_string += f'\n{output_file!r} saved.' + '\n'
             log_text.config(state='normal')
             log_text.delete('1.0','end')
             log_text.insert('end', log_string)
             log_text.config(state='disabled')
-            wb.close()
             log_text.see('end')
 
-        except Exception as err:
-             show_error(err)
+        # except Exception as err:
+            #  show_error(err)
 
 def show_log_text_menu(event,app=False):
     if log_text.tag_ranges('sel'):
@@ -261,7 +311,7 @@ def create_entry_menu(widget,is_file_entry=True):
         menu.add_command(label='Browse',command=lambda : browse_files(widget),accelerator='Ctrl+B')
     return menu
 
-window =tk.Tk()
+window = tk.Tk()
 window.title(APP_TITLE)
 window.resizable(False,False)
 
@@ -374,7 +424,7 @@ patterns_list.bind('<Control-I>',import_from_file)
 patterns_list.bind('<Control-e>',export_to_file)
 
 btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5',
-                        command=lambda : create_excel_file(output_file_entry.get(), input_file_entry.get(), sheet_name_entry.get(), 
+                        command=lambda : extract_data(output_file_entry.get(), input_file_entry.get(), sheet_name_entry.get(), 
                         set_patterns(patterns_list.get(0,'end')))
                         , cursor='hand2')
 
