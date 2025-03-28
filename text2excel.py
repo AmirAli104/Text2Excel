@@ -4,9 +4,11 @@ from tkinter import messagebox, filedialog, ttk
 from openpyxl.utils import get_column_letter
 from tkinter.simpledialog import askstring
 
+LOG_MODE = ('Disable log','Enable log')
 APP_TITLE = 'Text2Excel'
 ENCODING = 'utf-8-sig'
 LOG_DEFAULT = 'log ...'
+with_logging = True
 
 menu_color_args = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
 
@@ -24,6 +26,17 @@ def browse_files(widget):
     if file_path:
         widget.delete(0,'end')
         widget.insert('end',file_path)
+
+def toggle_log():
+    global with_logging
+    with_logging = not with_logging
+    
+    mode = log_menu.entrycget(3,'label')
+
+    if mode == LOG_MODE[0]:
+        log_menu.entryconfig(3,label = LOG_MODE[1])
+    else:
+        log_menu.entryconfig(3,label = LOG_MODE[0])
 
 def copy_log(event=None):
     window.clipboard_clear()
@@ -122,23 +135,30 @@ def remove_indices_from_patterns(patterns):
     return patterns_list
 
 def create_csv_file(output_file,patterns,content):
-    log_string = ''
-
     patterns = remove_indices_from_patterns(patterns)
 
     extracted_data = []
     for pattern in patterns:
         result = tuple(re.findall(pattern,content))
-        log_string += '\n'.join(result)
         extracted_data.append(result)
+
+    if with_logging:
+            extracted_data_copy = extracted_data
+            
     if col_var.get():
         extracted_data = tuple(zip(*extracted_data))
 
     with open(output_file,'a',newline='',encoding=ENCODING) as f:
         writer = csv.writer(f)
         writer.writerows(extracted_data)
+    
+    if with_logging:
+        log_string = ''
 
-    return log_string
+        for result in extracted_data_copy:
+            log_string += '\n'.join(result) + '\n'
+
+        return log_string
 
 def pattern_number_to_letter(patterns):
     patterns_list = []
@@ -196,7 +216,8 @@ def creat_excel_file(output_file,sheet_name,patterns,content):
             wb.save(output_file)
             wb.close()
 
-            return log_string
+            if with_logging:
+                return log_string
 
 def extract_data(output_file,input_file,sheet_name, patterns):
         try:
@@ -215,17 +236,18 @@ def extract_data(output_file,input_file,sheet_name, patterns):
             else:
                 assert None, 'The output file format is not supported.'
 
-            log_string += f'\n{output_file!r} saved.' + '\n'
-            log_text.config(state='normal')
-            log_text.delete('1.0','end')
-            log_text.insert('end', log_string)
-            log_text.config(state='disabled')
-            log_text.see('end')
+            if with_logging:
+                log_string += f'\n{output_file!r} saved.' + '\n'
+                log_text.config(state='normal')
+                log_text.delete('1.0','end')
+                log_text.insert('end', log_string)
+                log_text.config(state='disabled')
+                log_text.see('end')
 
         except (FileNotFoundError, AssertionError, PermissionError) as err:
              show_error(err)
 
-def show_log_text_menu(event,app=False):
+def show_log_menu(event,app=False):
     if log_text.tag_ranges('sel'):
         text='Copy selected'
     else:
@@ -297,6 +319,8 @@ def create_log_menu():
     menu = tk.Menu(tearoff=False,**menu_color_args)
     menu.add_command(label='Copy log',command=copy_log,accelerator='Ctrl+C')
     menu.add_command(label='Clear log',command=clear_log,accelerator='Ctrl+D')
+    menu.add_separator()
+    menu.add_command(label=LOG_MODE[0],command=toggle_log)
     return menu
 
 def create_entry_menu(widget,is_file_entry=True):
@@ -388,8 +412,8 @@ log_menu = create_log_menu()
 patterns_list.bind('<Button-3>', show_patterns_menu)
 patterns_list.bind('<App>', lambda event : show_patterns_menu(event, True))
 
-log_text.bind('<Button-3>',lambda event : show_log_text_menu(event))
-log_text.bind('<App>',lambda event : show_log_text_menu(event,True))
+log_text.bind('<Button-3>',lambda event : show_log_menu(event))
+log_text.bind('<App>',lambda event : show_log_menu(event,True))
 
 input_file_entry.bind('<Button-3>',lambda event : show_entry_menu(input_file_menu,event))
 input_file_entry.bind('<App>',lambda event : show_entry_menu(input_file_menu,event,True))
