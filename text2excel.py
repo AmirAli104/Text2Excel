@@ -4,7 +4,7 @@ from tkinter import messagebox, filedialog, ttk
 from openpyxl.utils import get_column_letter
 from tkinter.simpledialog import askstring
 
-LOG_MODE = ('Disable log','Enable log')
+LOG_MODE = ('Disable logging','Enable logging')
 APP_TITLE = 'Text2Excel'
 ENCODING = 'utf-8-sig'
 LOG_DEFAULT = 'log ...'
@@ -75,7 +75,7 @@ def export_to_file(event=None):
     try:
         file_path = filedialog.asksaveasfilename(title='Export')
         if file_path:
-            with open(file_path, 'w') as f:
+            with open(file_path, 'w',encoding=ENCODING) as f:
                 for i in patterns_list.get(0,'end'):
                     f.write(i + '\n')
     except Exception as err:
@@ -144,7 +144,7 @@ def create_csv_file(output_file,patterns,content):
 
     if with_logging:
             extracted_data_copy = extracted_data
-            
+
     if col_var.get():
         extracted_data = tuple(zip(*extracted_data))
 
@@ -167,7 +167,8 @@ def pattern_number_to_letter(patterns):
     return patterns_list
 
 def creat_excel_file(output_file,sheet_name,patterns,content):
-            log_string = ''
+            if with_logging:
+                log_string = ''
             if not os.path.isfile(output_file):
                 wb = openpyxl.Workbook()
                 wb.save(output_file)
@@ -204,7 +205,8 @@ def creat_excel_file(output_file,sheet_name,patterns,content):
 
             for pattern in patterns:
                 for item in re.finditer(pattern[1],content):
-                    log_string += item.group('item') + '\n'
+                    if with_logging:
+                        log_string += item.group('item') + '\n'
                     sheet[get_cell(pattern[0], index)] = item.group('item')
                     index+=1
 
