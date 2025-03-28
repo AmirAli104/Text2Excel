@@ -199,7 +199,7 @@ def creat_excel_file(output_file,sheet_name,patterns,content):
             return log_string
 
 def extract_data(output_file,input_file,sheet_name, patterns):
-        # try:
+        try:
             with open(input_file,encoding=ENCODING) as f:
                 content = f.read()
             assert output_file, 'The name of output file is required.'
@@ -213,7 +213,7 @@ def extract_data(output_file,input_file,sheet_name, patterns):
                 log_string = create_csv_file(output_file,patterns,content)
 
             else:
-                show_error('This output file format is not supported.')
+                assert None, 'The output file format is not supported.'
 
             log_string += f'\n{output_file!r} saved.' + '\n'
             log_text.config(state='normal')
@@ -222,8 +222,8 @@ def extract_data(output_file,input_file,sheet_name, patterns):
             log_text.config(state='disabled')
             log_text.see('end')
 
-        # except Exception as err:
-            #  show_error(err)
+        except (FileNotFoundError, AssertionError, PermissionError) as err:
+             show_error(err)
 
 def show_log_text_menu(event,app=False):
     if log_text.tag_ranges('sel'):
