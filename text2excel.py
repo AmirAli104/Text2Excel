@@ -107,12 +107,12 @@ def insert_pattern(event=None):
 
 
 def set_patterns(patterns):
-    patterns_list=[]
+    processed_patterns=[]
     for index,pattern in enumerate(patterns, 1):
         if not '?P<item>' in pattern:
             pattern = '(?P<item>' + pattern + ')'
-        patterns_list.append((index,pattern))
-    return patterns_list
+        processed_patterns.append((index,pattern))
+    return processed_patterns
 
 def find_max(wb, index, sheet_name):
     if col_var.get():
@@ -166,7 +166,7 @@ def pattern_number_to_letter(patterns):
         patterns_list.append( (get_column_letter(patterns[i][0]),patterns[i][1]) )
     return patterns_list
 
-def creat_excel_file(output_file,sheet_name,patterns,content):
+def create_excel_file(output_file,sheet_name,patterns,content):
             if with_logging:
                 log_string = ''
             if not os.path.isfile(output_file):
@@ -230,13 +230,13 @@ def extract_data(output_file,input_file,sheet_name, patterns):
             output_file_extention = os.path.splitext(output_file)[1]
 
             if output_file_extention in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
-                log_string = creat_excel_file(output_file,sheet_name,patterns,content)
+                log_string = create_excel_file(output_file,sheet_name,patterns,content)
 
             elif output_file_extention == '.csv':
                 log_string = create_csv_file(output_file,patterns,content)
 
             else:
-                assert None, 'The output file format is not supported.'
+                raise ValueError('The output file format is not supported.')
 
             if with_logging:
                 log_string += f'\n{output_file!r} saved.' + '\n'
@@ -246,7 +246,7 @@ def extract_data(output_file,input_file,sheet_name, patterns):
                 log_text.config(state='disabled')
                 log_text.see('end')
 
-        except (FileNotFoundError, AssertionError, PermissionError) as err:
+        except (FileNotFoundError, AssertionError, PermissionError, ValueError) as err:
              show_error(err)
 
 def show_log_menu(event,app=False):
