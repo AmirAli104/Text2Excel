@@ -9,8 +9,8 @@ APP_TITLE = 'Text2Excel'
 ENCODING = 'utf-8-sig'
 LOG_DEFAULT = 'log ...'
 FILE_TYPES = [
-    ('Excel Files','*.xlsx;*.xlsm;*.xltx;*.xltm'),
     ('All Files','*.*'),
+    ('Excel Files','*.xlsx;*.xlsm;*.xltx;*.xltm'),
     ('CSV Files','*.csv')
 ]
 with_logging = True
