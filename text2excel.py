@@ -8,6 +8,11 @@ LOG_MODE = ('Disable logging','Enable logging')
 APP_TITLE = 'Text2Excel'
 ENCODING = 'utf-8-sig'
 LOG_DEFAULT = 'log ...'
+FILE_TYPES = [
+    ('Excel Files','*.xlsx;*.xlsm;*.xltx;*.xltm'),
+    ('All Files','*.*'),
+    ('CSV Files','*.csv')
+]
 with_logging = True
 
 menu_color_args = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
@@ -22,7 +27,13 @@ def delete_all(event=None):
     patterns_list.delete(0,'end')
 
 def browse_files(widget):
-    file_path = filedialog.askopenfilename(title='Browse')
+    TITLE = 'Browse'
+
+    if widget == input_file_entry:
+        file_path = filedialog.askopenfilename(title=TITLE)
+    else:
+        file_path = filedialog.askopenfilename(title=TITLE,filetypes=FILE_TYPES)
+
     if file_path:
         widget.delete(0,'end')
         widget.insert('end',file_path)
@@ -342,9 +353,10 @@ window.title(APP_TITLE)
 window.resizable(False,False)
 
 main_frm = tk.Frame()
+main_frm.grid(row=0,column=0, rowspan=3,sticky='nsew')
 
 frm = tk.Frame(main_frm,borderwidth=10)
-frm.pack()
+frm.pack(fill='both',expand=1)
 
 input_file_lbl = tk.Label(frm,text='Input file:')
 output_file_lbl = tk.Label(frm,text='Output file:')
@@ -376,8 +388,6 @@ log_text.grid(row=0,column=0)
 xscroll_log.grid(row=1,column=0, pady=(0,10), sticky='we')
 yscroll_log.grid(row=0,column=1, sticky='ns')
 log_frm.pack()
-
-main_frm.grid(row=0,column=0, rowspan=3)
 
 exact_var = tk.IntVar()
 exact_cb = ttk.Checkbutton(text='Exact order       ', variable=exact_var)
