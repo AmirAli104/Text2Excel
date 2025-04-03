@@ -13,9 +13,11 @@ FILE_TYPES = [
     ('Excel Files','*.xlsx;*.xlsm;*.xltx;*.xltm'),
     ('CSV Files','*.csv')
 ]
+
 with_logging = True
 
-menu_color_args = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
+MENU_COLOR_ARGS = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
+EXACT_CB_GRID_ARGS = {'row' : 0, 'column' : 1, 'sticky' : 's'}
 
 def get_pattern():
     return askstring(title=APP_TITLE,prompt='Enter the pattern:')
@@ -119,67 +121,82 @@ def insert_pattern(event=None):
 
 def set_patterns(patterns):
     processed_patterns=[]
-    for index,pattern in enumerate(patterns, 1):
+    for pattern in patterns:
         if not '?P<item>' in pattern:
             pattern = '(?P<item>' + pattern + ')'
-        processed_patterns.append((index,pattern))
+        processed_patterns.append(pattern)
     return processed_patterns
 
-def find_max(wb, index, sheet_name):
-    if col_var.get():
-        row = 0
-        for i in wb[sheet_name].iter_rows(min_col=index,max_col=index):
-            if i[0].value is not None:
-                row = i[0].row
-        return row
-    else:
-        col = 0
-        for i in wb[sheet_name].iter_cols(min_row=index,max_row=index):
-            if i[0].value is not None:
-                col = i[0].column
-        return col
+def find_max(index, sheet):
+    row = 0
+    for i in sheet.iter_rows(min_col=index,max_col=index):
+        if i[0].value is not None:
+            row = i[0].row
+    return row
 
-def remove_indices_from_patterns(patterns):
-    patterns_list = []
-    for pattern in patterns:
-        patterns_list.append(pattern[1])
-    return patterns_list
+def create_column_order(extracted_data):
+    max_len = max([len(data_list) for data_list in extracted_data])
+
+    for data_list in extracted_data:
+        for _ in range(max_len - len(data_list)):
+            data_list.append('')
+        
+    return tuple(zip(*extracted_data))
+
+def log_found_data(extracted_data_copy):
+    log_string = ''
+
+    for data_list in extracted_data_copy:
+        log_string += '\n'.join(data_list) + '\n'
+
+    return log_string
 
 def create_csv_file(output_file,patterns,content):
-    patterns = remove_indices_from_patterns(patterns)
-
     extracted_data = []
     for pattern in patterns:
-        result = tuple(re.findall(pattern,content))
-        extracted_data.append(result)
+        data_list = list(re.findall(pattern,content))
+        extracted_data.append(data_list)
 
     if with_logging:
             extracted_data_copy = extracted_data
 
     if col_var.get():
-        extracted_data = tuple(zip(*extracted_data))
+        extracted_data = create_column_order(extracted_data)
 
     with open(output_file,'a',newline='',encoding=ENCODING) as f:
         writer = csv.writer(f)
         writer.writerows(extracted_data)
     
     if with_logging:
-        log_string = ''
+        return log_found_data(extracted_data_copy)
+    
+def convert_to_group_item(extracted_data):
+    for data_list in extracted_data:
+        index=0
+        for item in data_list:
+            data_list[index] = item.group('item')
+            index += 1
 
-        for result in extracted_data_copy:
-            log_string += '\n'.join(result) + '\n'
+def put_data_in_excel_without_exact_order(extracted_data,sheet):
+    for data_list in extracted_data:
+        sheet.append(data_list)
 
-        return log_string
+get_cell = lambda pattern_letter, row_number : pattern_letter + str(row_number)
+def put_data_in_excel_with_exact_order(extracted_data,sheet):
+    column_letters_list = [get_column_letter(i) for i in range(1,len(extracted_data)+1)]
 
-def pattern_number_to_letter(patterns):
-    patterns_list = []
-    for i in range(len(patterns)):
-        patterns_list.append( (get_column_letter(patterns[i][0]),patterns[i][1]) )
-    return patterns_list
+    find_max_index = 1
+    columns_list_index = 0
+
+    for data_list in extracted_data:
+        row_number = find_max(find_max_index,sheet) + 1
+        for item in data_list:
+            sheet[get_cell(column_letters_list[columns_list_index],row_number)] = item
+            row_number += 1
+        columns_list_index += 1
+        find_max_index += 1
 
 def create_excel_file(output_file,sheet_name,patterns,content):
-            if with_logging:
-                log_string = ''
             if not os.path.isfile(output_file):
                 wb = openpyxl.Workbook()
                 wb.save(output_file)
@@ -194,48 +211,38 @@ def create_excel_file(output_file,sheet_name,patterns,content):
             else:
                 sheet = wb.create_sheet(sheet_name)
 
-            i=1
-
-            if not exact_var.get():
-                if col_var.get():
-                    max_index = sheet.max_row
-                else:
-                    max_index = sheet.max_column
-            else:
-                max_index = find_max(wb,i, sheet_name)
-                        
-            if col_var.get():
-                patterns = pattern_number_to_letter(patterns)
-
-            if col_var.get():
-                get_cell = lambda pattern_number, index : pattern_number + str(index)
-            else:
-                get_cell = lambda pattern_number, index : get_column_letter(index) + str(pattern_number)
-
-            index=max_index+1
-
+            extracted_data = []
             for pattern in patterns:
-                for item in re.finditer(pattern[1],content):
-                    if with_logging:
-                        log_string += item.group('item') + '\n'
-                    sheet[get_cell(pattern[0], index)] = item.group('item')
-                    index+=1
+                data_list = list(re.finditer(pattern,content))
+                extracted_data.append(data_list)
+            
+            convert_to_group_item(extracted_data)
 
-                i+=1
-                if exact_var.get():
-                    max_index = find_max(wb,i, sheet_name)
-                index=max_index+1
+            if with_logging:
+                extracted_data_copy = extracted_data
+
+            if col_var.get() and not exact_var.get():
+                extracted_data = create_column_order(extracted_data)
+            
+            if not exact_var.get(): # The codes in this if statement will not be executed if 'put in rows' is enabled
+                put_data_in_excel_without_exact_order(extracted_data,sheet)
+            else:
+                put_data_in_excel_with_exact_order(extracted_data,sheet)
 
             wb.save(output_file)
             wb.close()
 
             if with_logging:
-                return log_string
+                return log_found_data(extracted_data_copy)
 
 def extract_data(output_file,input_file,sheet_name, patterns):
         try:
             with open(input_file,encoding=ENCODING) as f:
-                content = f.read()
+                try:
+                    content = f.read()
+                except UnicodeDecodeError:
+                    raise ValueError('The input file cannot be a binary file')
+
             assert output_file, 'The name of output file is required.'
             
             output_file_extention = os.path.splitext(output_file)[1]
@@ -258,7 +265,7 @@ def extract_data(output_file,input_file,sheet_name, patterns):
                 log_text.see('end')
 
         except (FileNotFoundError, AssertionError, PermissionError, ValueError) as err:
-             show_error(err)
+            show_error(err)
 
 def show_log_menu(event,app=False):
     if log_text.tag_ranges('sel'):
@@ -314,7 +321,7 @@ def show_entry_menu(menu,event,app=False):
         menu.tk_popup(event.x_root,event.y_root)
 
 def create_patterns_menu():
-     menu = tk.Menu(tearoff=False,**menu_color_args)
+     menu = tk.Menu(tearoff=False,**MENU_COLOR_ARGS)
      menu.add_command(label='Add Pattern', command=add_pattern,accelerator='Ctrl+Shift+A')
      menu.add_command(label='Insert Pattern',command=insert_pattern,accelerator='Ctrl+I')
      menu.add_separator()
@@ -329,7 +336,7 @@ def create_patterns_menu():
      return menu
 
 def create_log_menu():
-    menu = tk.Menu(tearoff=False,**menu_color_args)
+    menu = tk.Menu(tearoff=False,**MENU_COLOR_ARGS)
     menu.add_command(label='Copy log',command=copy_log,accelerator='Ctrl+C')
     menu.add_command(label='Clear log',command=clear_log,accelerator='Ctrl+D')
     menu.add_separator()
@@ -337,7 +344,7 @@ def create_log_menu():
     return menu
 
 def create_entry_menu(widget,is_file_entry=True):
-    menu = tk.Menu(tearoff=False,**menu_color_args)
+    menu = tk.Menu(tearoff=False,**MENU_COLOR_ARGS)
     menu.add_command(label='Select All', accelerator='Ctrl+A',command=lambda : widget.select_range(0,'end'))
     menu.add_command(label='Copy', accelerator='Ctrl+C',command=lambda : widget.event_generate('<<Copy>>'))
     menu.add_command(label='Paste', accelerator='Ctrl+V',command=lambda : widget.event_generate('<<Paste>>'))
@@ -347,6 +354,20 @@ def create_entry_menu(widget,is_file_entry=True):
     if is_file_entry:
         menu.add_command(label='Browse',command=lambda : browse_files(widget),accelerator='Ctrl+B')
     return menu
+
+exact_var_value = None
+def hide_exact_order_cb():
+    global exact_var_value
+
+    exact_cb.grid_forget()
+    exact_var_value = exact_var.get()
+    exact_var.set(False)
+    exact_cb_substitute_lbl.grid(**EXACT_CB_GRID_ARGS)
+
+def show_exact_order_cb():
+    exact_cb_substitute_lbl.grid_forget()
+    exact_var.set(exact_var_value)
+    exact_cb.grid(**EXACT_CB_GRID_ARGS)
 
 window = tk.Tk()
 window.title(APP_TITLE)
@@ -389,14 +410,15 @@ xscroll_log.grid(row=1,column=0, pady=(0,10), sticky='we')
 yscroll_log.grid(row=0,column=1, sticky='ns')
 log_frm.pack()
 
+exact_cb_substitute_lbl = tk.Label()
 exact_var = tk.IntVar()
 exact_cb = ttk.Checkbutton(text='Exact order       ', variable=exact_var)
-exact_cb.grid(row=0,column=1, sticky='s')
+exact_cb.grid(**EXACT_CB_GRID_ARGS)
 
 rbtn_frm = tk.Frame()
 col_var = tk.IntVar(value=1)
-col_rb = ttk.Radiobutton(rbtn_frm,text='Put in columns', variable=col_var, value=1)
-row_rb = ttk.Radiobutton(rbtn_frm,text='Put in rows', variable=col_var, value=0)
+col_rb = ttk.Radiobutton(rbtn_frm,text='Put in columns', variable=col_var, value=True,command=show_exact_order_cb)
+row_rb = ttk.Radiobutton(rbtn_frm,text='Put in rows', variable=col_var, value=False,command=hide_exact_order_cb)
 col_rb.pack(anchor='w')
 row_rb.pack(anchor='w')
 rbtn_frm.grid(row=1,column=1, sticky='s')
