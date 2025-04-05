@@ -17,7 +17,7 @@ FILE_TYPES = [
 with_logging = True
 
 MENU_COLOR_ARGS = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
-EXACT_CB_GRID_ARGS = {'row' : 0, 'column' : 1, 'sticky' : 's'}
+EXACT_CB_GRID_ARGS = {'row' : 0, 'column' : 1, 'sticky' : 's', 'pady' : (0,10), 'padx' : (0,20)}
 
 def get_pattern():
     return askstring(title=APP_TITLE,prompt='Enter the pattern:')
@@ -81,8 +81,8 @@ def import_from_file(event=None):
             with open(file_path, encoding=ENCODING) as f:
                 for i in f.read().strip().splitlines():
                     patterns_list.insert('end', i)
-    except Exception as err:
-         show_error(err)
+    except UnicodeDecodeError:
+         show_error('The patterns file cannot be a binary file')
 
 def export_to_file(event=None):
     try:
@@ -237,6 +237,8 @@ def create_excel_file(output_file,sheet_name,patterns,content):
 
 def extract_data(output_file,input_file,sheet_name, patterns):
         try:
+            assert patterns, 'There is no patterns to extract data'
+
             with open(input_file,encoding=ENCODING) as f:
                 try:
                     content = f.read()
@@ -247,14 +249,14 @@ def extract_data(output_file,input_file,sheet_name, patterns):
             
             output_file_extention = os.path.splitext(output_file)[1]
 
-            if output_file_extention in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
-                log_string = create_excel_file(output_file,sheet_name,patterns,content)
-
-            elif output_file_extention == '.csv':
-                log_string = create_csv_file(output_file,patterns,content)
+            if excel_var.get():
+                if output_file_extention in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
+                    log_string = create_excel_file(output_file,sheet_name,patterns,content)
+                else:
+                    raise ValueError('The output file format is not supported. It should be .xlsx, .xlsm, .xltx or .xltm')
 
             else:
-                raise ValueError('The output file format is not supported.')
+                log_string = create_csv_file(output_file,patterns,content)
 
             if with_logging:
                 log_string += f'\n{output_file!r} saved.' + '\n'
@@ -343,7 +345,7 @@ def create_log_menu():
     menu.add_command(label=LOG_MODE[0],command=toggle_log)
     return menu
 
-def create_entry_menu(widget,is_file_entry=True):
+def create_entry_menu(widget,is_file_entry=True,is_output_file_entry=True):
     menu = tk.Menu(tearoff=False,**MENU_COLOR_ARGS)
     menu.add_command(label='Select All', accelerator='Ctrl+A',command=lambda : widget.select_range(0,'end'))
     menu.add_command(label='Copy', accelerator='Ctrl+C',command=lambda : widget.event_generate('<<Copy>>'))
@@ -353,21 +355,38 @@ def create_entry_menu(widget,is_file_entry=True):
     menu.add_command(label='Clear',accelerator='Ctrl+Shift+C',command=lambda : widget.delete(0,'end'))
     if is_file_entry:
         menu.add_command(label='Browse',command=lambda : browse_files(widget),accelerator='Ctrl+B')
+        if is_output_file_entry:
+            menu.add_separator()
+            menu.add_radiobutton(label='Excel',variable=excel_var,value=True,command=show_only_excel_required_widgets)
+            menu.add_radiobutton(label='CSV',variable=excel_var,value=False,command=hide_only_excel_required_widgets)
     return menu
 
 exact_var_value = None
 def hide_exact_order_cb():
     global exact_var_value
 
-    exact_cb.grid_forget()
+    exact_cb.grid_remove()
     exact_var_value = exact_var.get()
     exact_var.set(False)
     exact_cb_substitute_lbl.grid(**EXACT_CB_GRID_ARGS)
 
 def show_exact_order_cb():
-    exact_cb_substitute_lbl.grid_forget()
-    exact_var.set(exact_var_value)
-    exact_cb.grid(**EXACT_CB_GRID_ARGS)
+    if excel_var.get():
+        exact_cb_substitute_lbl.grid_remove()
+        exact_var.set(exact_var_value)
+        exact_cb.grid()
+
+def hide_only_excel_required_widgets(): # sheet_name_entry, sheet_name_lbl, exact_cb
+    hide_exact_order_cb()
+    
+    sheet_name_lbl.grid_remove()
+    sheet_name_entry.grid_remove()
+
+def show_only_excel_required_widgets():
+    show_exact_order_cb()
+
+    sheet_name_lbl.grid()
+    sheet_name_entry.grid()
 
 window = tk.Tk()
 window.title(APP_TITLE)
@@ -385,15 +404,15 @@ sheet_name_lbl = tk.Label(frm,text='Sheet name:')
 
 input_file_entry = ttk.Entry(frm,width=30)
 output_file_entry = ttk.Entry(frm,width=30)
-sheet_name_entry = ttk.Entry(frm,width=10)
+sheet_name_entry = ttk.Entry(frm,width=15)
 
 input_file_lbl.grid(row=2,column=0,sticky='w')
 output_file_lbl.grid(row=2, column=3,sticky='w')
-sheet_name_lbl.grid(row=4,column=3,sticky='w')
+sheet_name_lbl.grid(row=4, column=3, sticky='w')
 
 input_file_entry.grid(row=3,column=0,sticky='w')
 output_file_entry.grid(row=3,column=3,sticky='w')
-sheet_name_entry.grid(row=5,column=3,sticky='w')
+sheet_name_entry.grid(row=5, column=3, sticky='w')
 
 log_frm = tk.Frame(main_frm)
 yscroll_log = tk.Scrollbar(log_frm)
@@ -412,16 +431,18 @@ log_frm.pack()
 
 exact_cb_substitute_lbl = tk.Label()
 exact_var = tk.IntVar()
-exact_cb = ttk.Checkbutton(text='Exact order       ', variable=exact_var)
+exact_cb = ttk.Checkbutton(text='Exact order', variable=exact_var)
 exact_cb.grid(**EXACT_CB_GRID_ARGS)
 
-rbtn_frm = tk.Frame()
-col_var = tk.IntVar(value=1)
-col_rb = ttk.Radiobutton(rbtn_frm,text='Put in columns', variable=col_var, value=True,command=show_exact_order_cb)
-row_rb = ttk.Radiobutton(rbtn_frm,text='Put in rows', variable=col_var, value=False,command=hide_exact_order_cb)
+column_row_frm = tk.Frame()
+col_var = tk.IntVar(value=True)
+col_rb = ttk.Radiobutton(column_row_frm,text='Put in columns', variable=col_var, value=True,command=show_exact_order_cb)
+row_rb = ttk.Radiobutton(column_row_frm,text='Put in rows', variable=col_var, value=False,command=hide_exact_order_cb)
 col_rb.pack(anchor='w')
 row_rb.pack(anchor='w')
-rbtn_frm.grid(row=1,column=1, sticky='s')
+column_row_frm.grid(row=1,column=1, sticky='s')
+
+excel_var = tk.IntVar(value=True)
 
 patterns_list_frm = tk.Frame(bd = 10)
 yscroll_pl = tk.Scrollbar(patterns_list_frm)
@@ -437,7 +458,7 @@ xscroll_pl.grid(row=2,column=0, sticky='we')
 yscroll_pl.grid(row=1,column=1,sticky='ns')
 patterns_list_frm.grid(row=2,column=1, sticky='s')
 
-input_file_menu = create_entry_menu(input_file_entry)
+input_file_menu = create_entry_menu(input_file_entry,is_output_file_entry=False)
 output_file_menu = create_entry_menu(output_file_entry)
 sheet_name_menu = create_entry_menu(sheet_name_entry,False)
 patterns_menu  = create_patterns_menu()
