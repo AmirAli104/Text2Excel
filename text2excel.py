@@ -363,12 +363,12 @@ def create_entry_menu(widget,is_file_entry=True,is_output_file_entry=True):
 
 exact_var_value = None
 def hide_exact_order_cb():
-    global exact_var_value
+        global exact_var_value
 
-    exact_cb.grid_remove()
-    exact_var_value = exact_var.get()
-    exact_var.set(False)
-    exact_cb_substitute_lbl.grid(**EXACT_CB_GRID_ARGS)
+        exact_cb.grid_remove()
+        exact_var_value = exact_var.get()
+        exact_var.set(False)
+        exact_cb_substitute_lbl.grid(**EXACT_CB_GRID_ARGS)
 
 def show_exact_order_cb():
     if excel_var.get():
@@ -377,13 +377,15 @@ def show_exact_order_cb():
         exact_cb.grid()
 
 def hide_only_excel_required_widgets(): # sheet_name_entry, sheet_name_lbl, exact_cb
-    hide_exact_order_cb()
+    if exact_cb.winfo_ismapped():
+        hide_exact_order_cb()
     
     sheet_name_lbl.grid_remove()
     sheet_name_entry.grid_remove()
 
 def show_only_excel_required_widgets():
-    show_exact_order_cb()
+    if col_var.get():
+        show_exact_order_cb()
 
     sheet_name_lbl.grid()
     sheet_name_entry.grid()
