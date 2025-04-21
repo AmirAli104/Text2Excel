@@ -4,6 +4,12 @@ from tkinter import messagebox, filedialog, ttk
 from openpyxl.utils import get_column_letter
 from tkinter.simpledialog import askstring
 
+from openpyxl.worksheet.worksheet import Worksheet
+from typing import TypeAlias, Union
+
+ExtractedData : TypeAlias = tuple[tuple[str, ...], ...]
+Patterns : TypeAlias = list[str]
+
 LOG_MODE = ('Disable logging','Enable logging')
 APP_TITLE = 'Text2Excel'
 ENCODING = 'utf-8-sig'
@@ -19,13 +25,13 @@ with_logging = True
 MENU_COLOR_ARGS = {'activebackground' : '#00c8ff', 'activeforeground' : 'black'}
 EXACT_CB_GRID_ARGS = {'row' : 0, 'column' : 1, 'sticky' : 's', 'pady' : (0,10), 'padx' : (0,20)}
 
-def get_pattern():
+def get_pattern() -> str:
     return askstring(title=APP_TITLE,prompt='Enter the pattern:')
 
-def show_error(err):
+def show_error(err : Union[Exception,str]) -> None:
     messagebox.showerror(title=APP_TITLE, message=err)
 
-def browse_files(widget):
+def browse_files(widget : ttk.Entry) -> None:
     TITLE = 'Browse'
 
     if widget == input_file_entry:
@@ -38,7 +44,7 @@ def browse_files(widget):
         widget.insert('end',file_path)
 
 class LogMenuCommands:
-    def toggle_log():
+    def toggle_log() -> None:
         global with_logging
         with_logging = not with_logging
         
@@ -49,7 +55,7 @@ class LogMenuCommands:
         else:
             log_menu.entryconfig(3,label = LOG_MODE[0])
 
-    def copy_log(event=None):
+    def copy_log(event : tk.Event=None) -> None:
         window.clipboard_clear()
         try:
             data = log_text.selection_get()
@@ -57,24 +63,24 @@ class LogMenuCommands:
             data = log_text.get('1.0','end')
         window.clipboard_append(data)
 
-    def clear_log(event=None):
+    def clear_log(event : tk.Event=None) -> None:
         log_text.config(state='normal')
         log_text.delete('1.0','end')
         log_text.insert('end',LOG_DEFAULT)
         log_text.config(state='disabled')
 
 class PatternsMenuCommands:
-    def add_pattern(event=None):
+    def add_pattern(event : tk.Event=None) -> None:
         new_pattern = get_pattern()
         patterns_list.insert('end',new_pattern)
 
-    def insert_pattern(event=None):
+    def insert_pattern(event : tk.Event=None) -> None:
         selected = patterns_list.curselection()
         if len(selected) == 1:
             new_pattern = get_pattern()
             patterns_list.insert(selected[0],new_pattern)
 
-    def edit_selected(event=None):
+    def edit_selected(event : tk.Event=None) -> None:
         index = patterns_list.curselection()
         if len(index) == 1:
             value = patterns_list.get(index)
@@ -83,15 +89,15 @@ class PatternsMenuCommands:
                 patterns_list.delete(index)
                 patterns_list.insert(index, new_value)
 
-    def delete_selected(event=None):
+    def delete_selected(event : tk.Event=None) -> None:
         selected = patterns_list.curselection()
         if selected:
             patterns_list.delete(selected[0],selected[-1])
     
-    def delete_all(event=None):
+    def delete_all(event : tk.Event=None) -> None:
         patterns_list.delete(0,'end')
 
-    def copy_pattern(event=None,all=False):
+    def copy_pattern(event : tk.Event=None, all : bool=False) -> None:
         window.clipboard_clear()
         if all:
             window.clipboard_append('\n'.join(patterns_list.get(0,'end')))
@@ -100,7 +106,7 @@ class PatternsMenuCommands:
             if selected:
                 window.clipboard_append('\n'.join(patterns_list.get(selected[0],selected[-1])))
 
-    def import_from_file(event=None):
+    def import_from_file(event : tk.Event=None) -> None:
         try:
             file_path = filedialog.askopenfilename(title='Import')
             if file_path:
@@ -110,7 +116,7 @@ class PatternsMenuCommands:
         except UnicodeDecodeError:
             show_error('The patterns file cannot be a binary file')
 
-    def export_to_file(event=None):
+    def export_to_file(event : tk.Event=None) -> None:
         try:
             file_path = filedialog.asksaveasfilename(title='Export')
             if file_path:
@@ -121,7 +127,7 @@ class PatternsMenuCommands:
             show_error(err)
 
 class CSVFileExtractor:
-    def create_csv_file(output_file,patterns,content):
+    def create_csv_file(output_file : str, patterns : Patterns ,content : str) -> str | None:
         extracted_data = DataExtractor.extract_data(patterns,content)
 
         if with_logging:
@@ -138,19 +144,21 @@ class CSVFileExtractor:
             return DataExtractor.log_found_data(extracted_data_copy)
 
 class ExcelFileExtractor:
-    def find_max(index, sheet):
+    def find_max(index : int, sheet : Worksheet) -> int:
         row = 0
         for i in sheet.iter_rows(min_col=index,max_col=index):
             if i[0].value is not None:
                 row = i[0].row
         return row
 
-    def put_data_in_excel_without_exact_order(extracted_data,sheet):
+    def put_data_in_excel_without_exact_order(extracted_data : ExtractedData, sheet : Worksheet) -> None:
         for data_list in extracted_data:
             sheet.append(data_list)
 
-    get_cell = lambda pattern_letter, row_number : pattern_letter + str(row_number)
-    def put_data_in_excel_with_exact_order(extracted_data,sheet):
+    def get_cell(pattern_letter : str, row_number : int):
+        return pattern_letter + str(row_number)
+
+    def put_data_in_excel_with_exact_order(extracted_data : ExtractedData, sheet : Worksheet) -> None:
         column_letters_list = [get_column_letter(i) for i in range(1,len(extracted_data)+1)]
 
         find_max_index = 1
@@ -164,7 +172,7 @@ class ExcelFileExtractor:
             columns_list_index += 1
             find_max_index += 1
 
-    def create_excel_file(output_file,sheet_name,patterns,content):
+    def create_excel_file(output_file : str, sheet_name : str, patterns : Patterns, content : str) -> str | None:
                 if not os.path.isfile(output_file):
                     wb = openpyxl.Workbook()
                     wb.save(output_file)
@@ -199,7 +207,7 @@ class ExcelFileExtractor:
                     return DataExtractor.log_found_data(extracted_data_copy)
 
 class DataExtractor:
-    def extract_data(patterns,content):
+    def extract_data(patterns : Patterns, content : str) -> ExtractedData:
         extracted_data = []
         for pattern in patterns:
             data_list = re.findall(pattern,content)
@@ -207,7 +215,7 @@ class DataExtractor:
 
         return extracted_data
 
-    def prepare_to_extract_data(output_file,input_file,sheet_name, patterns):
+    def prepare_to_extract_data(output_file : str, input_file : str, sheet_name : str, patterns : Patterns) -> None:
             try:
                 assert patterns, 'There is no patterns to extract data'
 
@@ -242,7 +250,7 @@ class DataExtractor:
                 show_error(err)
 
             
-    def log_found_data(extracted_data_copy):
+    def log_found_data(extracted_data_copy : ExtractedData) -> str:
         log_string = ''
 
         for data_list in extracted_data_copy:
@@ -250,7 +258,7 @@ class DataExtractor:
 
         return log_string
     
-    def create_column_order(extracted_data):
+    def create_column_order(extracted_data : ExtractedData) -> tuple[tuple[str]]:
         max_len = max([len(data_list) for data_list in extracted_data])
 
         for data_list in extracted_data:
@@ -259,8 +267,8 @@ class DataExtractor:
             
         return tuple(zip(*extracted_data))
 
-class MenuDisplayers:
-    def show_log_menu(event,app=False):
+class ContextMenuDisplayers:
+    def show_log_menu(event : tk.Event, app : bool = False) -> None:
         if log_text.tag_ranges('sel'):
             text='Copy selected'
         else:
@@ -273,7 +281,7 @@ class MenuDisplayers:
             log_menu.tk_popup(event.x_root,event.y_root)
             
 
-    def show_patterns_menu(event, app=False):
+    def show_patterns_menu(event : tk.Event, app : bool=False) -> None:
         selected = patterns_list.curselection()
         if selected:
             if len(selected)>1:
@@ -297,7 +305,7 @@ class MenuDisplayers:
         else:
             patterns_menu.tk_popup(event.x_root, event.y_root)
 
-    def show_entry_menu(menu,event,app=False):
+    def show_entry_menu(menu : tk.Menu, event : tk.Event, app : bool=False) -> None:
         if window.focus_get() == event.widget:
             for i in range(4):
                 menu.entryconfig(i,state='active')
@@ -313,7 +321,7 @@ class MenuDisplayers:
             menu.tk_popup(event.x_root,event.y_root)
 
 class MenuCreators:
-    def create_patterns_menu():
+    def create_patterns_menu() -> tk.Menu:
         menu = tk.Menu(tearoff=False,**MENU_COLOR_ARGS)
         menu.add_command(label='Add Pattern', command=PatternsMenuCommands.add_pattern,accelerator='Ctrl+Shift+A')
         menu.add_command(label='Insert Pattern',command=PatternsMenuCommands.insert_pattern,accelerator='Ctrl+I')
@@ -328,7 +336,7 @@ class MenuCreators:
         menu.add_command(label='Export to file', command=PatternsMenuCommands.export_to_file,accelerator='Ctrl+E')
         return menu
 
-    def create_log_menu():
+    def create_log_menu() -> tk.Menu:
         menu = tk.Menu(tearoff=False,**MENU_COLOR_ARGS)
         menu.add_command(label='Copy log',command=LogMenuCommands.copy_log,accelerator='Ctrl+C')
         menu.add_command(label='Clear log',command=LogMenuCommands.clear_log,accelerator='Ctrl+D')
@@ -336,7 +344,7 @@ class MenuCreators:
         menu.add_command(label=LOG_MODE[0],command=LogMenuCommands.toggle_log)
         return menu
 
-    def create_entry_menu(widget,is_file_entry=True,is_output_file_entry=True):
+    def create_entry_menu(widget : ttk.Entry, is_file_entry : bool=True,is_output_file_entry : bool=True) -> tk.Menu:
         menu = tk.Menu(tearoff=False,**MENU_COLOR_ARGS)
         menu.add_command(label='Select All', accelerator='Ctrl+A',command=lambda : widget.select_range(0,'end'))
         menu.add_command(label='Copy', accelerator='Ctrl+C',command=lambda : widget.event_generate('<<Copy>>'))
@@ -355,26 +363,26 @@ class MenuCreators:
 class CSVExcelSwitchFunctions:
 
     exact_var_value = None
-    def hide_exact_order_cb():
+    def hide_exact_order_cb() -> None:
             exact_cb.grid_remove()
             CSVExcelSwitchFunctions.exact_var_value = exact_var.get()
             exact_var.set(False)
             exact_cb_substitute_lbl.grid(**EXACT_CB_GRID_ARGS)
 
-    def show_exact_order_cb():
+    def show_exact_order_cb() -> None:
         if excel_var.get():
             exact_cb_substitute_lbl.grid_remove()
             exact_var.set(CSVExcelSwitchFunctions.exact_var_value)
             exact_cb.grid()
 
-    def hide_only_excel_required_widgets(): # sheet_name_entry, sheet_name_lbl, exact_cb
+    def hide_only_excel_required_widgets() -> None: # sheet_name_entry, sheet_name_lbl, exact_cb
         if exact_cb.winfo_ismapped():
             CSVExcelSwitchFunctions.hide_exact_order_cb()
         
         sheet_name_lbl.grid_remove()
         sheet_name_entry.grid_remove()
 
-    def show_only_excel_required_widgets():
+    def show_only_excel_required_widgets() -> None:
         if col_var.get():
             CSVExcelSwitchFunctions.show_exact_order_cb()
 
@@ -457,20 +465,20 @@ sheet_name_menu = MenuCreators.create_entry_menu(sheet_name_entry,False)
 patterns_menu  = MenuCreators.create_patterns_menu()
 log_menu = MenuCreators.create_log_menu()
 
-patterns_list.bind('<Button-3>', MenuDisplayers.show_patterns_menu)
-patterns_list.bind('<App>', lambda event : MenuDisplayers.show_patterns_menu(event, True))
+patterns_list.bind('<Button-3>', ContextMenuDisplayers.show_patterns_menu)
+patterns_list.bind('<App>', lambda event : ContextMenuDisplayers.show_patterns_menu(event, True))
 
-log_text.bind('<Button-3>',lambda event : MenuDisplayers.show_log_menu(event))
-log_text.bind('<App>',lambda event : MenuDisplayers.show_log_menu(event,True))
+log_text.bind('<Button-3>',lambda event : ContextMenuDisplayers.show_log_menu(event))
+log_text.bind('<App>',lambda event : ContextMenuDisplayers.show_log_menu(event,True))
 
-input_file_entry.bind('<Button-3>',lambda event : MenuDisplayers.show_entry_menu(input_file_menu,event))
-input_file_entry.bind('<App>',lambda event : MenuDisplayers.show_entry_menu(input_file_menu,event,True))
+input_file_entry.bind('<Button-3>',lambda event : ContextMenuDisplayers.show_entry_menu(input_file_menu,event))
+input_file_entry.bind('<App>',lambda event : ContextMenuDisplayers.show_entry_menu(input_file_menu,event,True))
 
-output_file_entry.bind('<Button-3>',lambda event : MenuDisplayers.show_entry_menu(output_file_menu,event))
-output_file_entry.bind('<App>',lambda event : MenuDisplayers.show_entry_menu(output_file_menu,event,True))
+output_file_entry.bind('<Button-3>',lambda event : ContextMenuDisplayers.show_entry_menu(output_file_menu,event))
+output_file_entry.bind('<App>',lambda event : ContextMenuDisplayers.show_entry_menu(output_file_menu,event,True))
 
-sheet_name_entry.bind('<Button-3>', lambda event : MenuDisplayers.show_entry_menu(sheet_name_menu,event))
-sheet_name_entry.bind('<App>',lambda event : MenuDisplayers.show_entry_menu(sheet_name_menu,event,True))
+sheet_name_entry.bind('<Button-3>', lambda event : ContextMenuDisplayers.show_entry_menu(sheet_name_menu,event))
+sheet_name_entry.bind('<App>',lambda event : ContextMenuDisplayers.show_entry_menu(sheet_name_menu,event,True))
 
 window.bind_class('TEntry','<Control-C>',lambda event : event.widget.delete(0,'end'))
 
