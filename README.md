@@ -1,6 +1,6 @@
 # Text2Excel
 
-Text2Excel is a GUI desktop application that can extract data from a text file and put them in an Excel or CSV file using regular expression (regex) patterns. It uses python re module.
+Text2Excel is a GUI desktop application that can extract data from a text file and put them in an Excel or CSV file using regular expression (regex) patterns. It uses python `re` module.
 
 You should right click on the patterns widget and use the options in the context menu to add the patterns. You can choose to put the data in columns or rows and in which sheet.
 
