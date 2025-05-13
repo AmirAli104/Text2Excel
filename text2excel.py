@@ -227,7 +227,7 @@ class DataExtractor:
 
                 assert output_file, 'The name of output file is required.'
                 
-                output_file_extention = os.path.splitext(output_file)[1]
+                output_file_extention = os.path.splitext(output_file)[1].lower()
 
                 if excel_var.get():
                     if output_file_extention in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
