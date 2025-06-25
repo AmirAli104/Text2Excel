@@ -29,3 +29,20 @@ I was using `openpyxl-3.1.5` when I wrote this program. To install it:
 ```
 python -m pip install openpyxl==3.1.5
 ```
+
+And then you can run `src/text2excel.py`
+
+Build
+---
+To build the program go to the `build` directory and execute `text2excel.spec`:
+
+```
+cd build
+pyinstaller text2excel.spec
+```
+
+To install `pyinstaller`:
+
+```
+pip install pyinstaller
+```
