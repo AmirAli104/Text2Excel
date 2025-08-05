@@ -1,13 +1,13 @@
 """
-Text2Excel is a GUI desktop application that can extract data from a text file 
+Text2Excel is a GUI desktop application that can extract data from a text file
 and put them in an Excel or CSV file using regular expression (regex) patterns.
 
-version 2.5.0
+version 2.6.0
 
 https://github.com/AmirAli104/Text2Excel
 """
 
-__version__ = '2.5.0'
+__version__ = '2.6.0'
 
 import tkinter as tk
 from tkinter import ttk
@@ -60,7 +60,7 @@ sheet_name_entry.grid(row=5, column=3, sticky='w')
 log_frm = tk.Frame(main_frm)
 yscroll_log = tk.Scrollbar(log_frm)
 xscroll_log = tk.Scrollbar(log_frm, orient='horizontal')
-log_text = tk.Text(log_frm,width=23, height=10, font = 'TkTextFont', wrap = 'none', 
+log_text = tk.Text(log_frm,width=23, height=10, font = 'TkTextFont', wrap = 'none',
                    yscrollcommand=yscroll_log.set, xscrollcommand=xscroll_log.set,takefocus=True,
                    highlightcolor='black',highlightthickness=1)
 yscroll_log.config(command=log_text.yview)
@@ -95,7 +95,7 @@ patterns_list_frm = tk.Frame(bd = 10)
 yscroll_pl = tk.Scrollbar(patterns_list_frm)
 xscroll_pl = tk.Scrollbar(patterns_list_frm, orient='horizontal')
 pattern_lbl = tk.Label(patterns_list_frm,text='Patterns:')
-patterns_list = tk.Listbox(patterns_list_frm,width=25,height=13, yscrollcommand=yscroll_pl.set, 
+patterns_list = tk.Listbox(patterns_list_frm,width=25,height=13, yscrollcommand=yscroll_pl.set,
                            xscrollcommand=xscroll_pl.set,selectmode='extended')
 xscroll_pl.config(command=patterns_list.xview)
 yscroll_pl.config(command=patterns_list.yview)
@@ -122,22 +122,24 @@ CommandsObjects.log_menu_commands.log_menu = log_menu
 
 # ----- context menu displayer functions for menus which defined in the last sections -----
 
-context_menu_displayer = ContextMenuDisplayers(log_text, log_menu, patterns_menu, patterns_list, window, sheet_name_entry)
+context_menu_displayer = ContextMenuDisplayers(log_text, log_menu, patterns_menu, patterns_list, window,
+                                               sheet_name_entry, input_file_entry, output_file_entry,
+                                               sheet_name_menu, input_file_menu, output_file_menu)
 
 input_file_entry.bind('<Button-3>',lambda event : context_menu_displayer.show_entry_menu(input_file_menu,event))
-input_file_entry.bind('<App>',lambda event : context_menu_displayer.show_entry_menu(input_file_menu,event,True))
-
 output_file_entry.bind('<Button-3>',lambda event : context_menu_displayer.show_entry_menu(output_file_menu,event))
-output_file_entry.bind('<App>',lambda event : context_menu_displayer.show_entry_menu(output_file_menu,event,True))
-
 sheet_name_entry.bind('<Button-3>', lambda event : context_menu_displayer.show_entry_menu(sheet_name_menu,event))
-sheet_name_entry.bind('<App>',lambda event : context_menu_displayer.show_entry_menu(sheet_name_menu,event,True))
-
 patterns_list.bind('<Button-3>', context_menu_displayer.show_patterns_menu)
-patterns_list.bind('<App>', lambda event : context_menu_displayer.show_patterns_menu(event, True))
-
 log_text.bind('<Button-3>',lambda event : context_menu_displayer.show_log_menu(event))
-log_text.bind('<App>',lambda event : context_menu_displayer.show_log_menu(event,True))
+
+if os.name == 'nt':
+    context_menu_displayer.set_keysym('<App>')
+else:
+    try:
+        context_menu_displayer.set_keysym('<Menu>')
+        context_menu_displayer.set_keysym('<Shift-F10>')
+    except tk.TclError:
+        pass
 
 # ----- keyboard shortcuts for context menus options -----
 
@@ -169,8 +171,8 @@ row_rb.config(command=CommandsObjects.csv_excel_switch_functions.hide_exact_orde
 
 data_extractor = DataExtractor(excel_var, log_text, col_var, exact_var)
 
-btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5', 
-                        command=lambda : data_extractor.prepare_to_extract_data(output_file_entry.get(), 
+btn_convert = tk.Button(frm,text='convert',width=10,height=5,background='#0080e5',
+                        command=lambda : data_extractor.prepare_to_extract_data(output_file_entry.get(),
                         input_file_entry.get(), sheet_name_entry.get(), patterns_list.get(0,'end')), cursor='hand2')
 
 btn_convert.bind('<Enter>', lambda event : btn_convert.config(bg = '#0092ff'))
