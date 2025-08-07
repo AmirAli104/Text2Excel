@@ -2,12 +2,12 @@
 Text2Excel is a GUI desktop application that can extract data from a text file
 and put them in an Excel or CSV file using regular expression (regex) patterns.
 
-version 2.6.1
+version 2.6.2
 
 https://github.com/AmirAli104/Text2Excel
 """
 
-__version__ = '2.6.1'
+__version__ = '2.6.2'
 
 import tkinter as tk
 from tkinter import ttk
@@ -133,11 +133,13 @@ patterns_list.bind('<Button-3>', context_menu_displayer.show_patterns_menu)
 log_text.bind('<Button-3>',lambda event : context_menu_displayer.show_log_menu(event))
 
 try:
+    context_menu_displayer.set_keysym('<Shift-F10>')
+
     if os.name == 'nt':
         context_menu_displayer.set_keysym('<App>')
     else:
         context_menu_displayer.set_keysym('<Menu>')
-    context_menu_displayer.set_keysym('<Shift-F10>')
+
 except tk.TclError:
     pass
 
