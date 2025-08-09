@@ -65,6 +65,9 @@ class MenuCreators:
             menu.add_command(label='Browse',command=lambda : browse_files(widget, not is_output_file_entry),accelerator='Ctrl+B')
             if is_output_file_entry:
                 menu.add_separator()
-                menu.add_radiobutton(label='Excel',variable=excel_var,value=True,command=CommandsObjects.csv_excel_switch_functions.show_only_excel_required_widgets)
-                menu.add_radiobutton(label='CSV',variable=excel_var,value=False,command=CommandsObjects.csv_excel_switch_functions.hide_only_excel_required_widgets)
+                menu.add_radiobutton(label='Excel',variable=excel_var,value=True,
+                                     command=CommandsObjects.csv_excel_switch_functions.show_only_excel_required_widgets)
+
+                menu.add_radiobutton(label='CSV',variable=excel_var,value=False,
+                                     command=CommandsObjects.csv_excel_switch_functions.hide_only_excel_required_widgets)
         return menu
