@@ -1,4 +1,15 @@
 from tkinter import Menu, Event
+from os import name
+
+def nt_get_label(self):
+    if self.log_text.tag_ranges('sel'):
+        return 'Copy selected'
+    else:
+        return 'Copy log'
+
+def posix_get_label(self):
+    return 'Copy log'
+
 
 class ContextMenuDisplayers:
 
@@ -20,11 +31,14 @@ class ContextMenuDisplayers:
         self.input_file_menu = input_file_menu
         self.output_file_menu = output_file_menu
 
-    def show_log_menu(self ,event : Event, app : bool = False) -> None:
-        if self.log_text.tag_ranges('sel'):
-            text='Copy selected'
+        if name == 'posix':
+            self.get_label = posix_get_label
         else:
-            text='Copy log'
+            self.get_label = nt_get_label
+
+    def show_log_menu(self ,event : Event, app : bool = False) -> None:
+        text = self.get_label(self)
+
         self.log_menu.entryconfig(0,label=text)
 
         if app:
