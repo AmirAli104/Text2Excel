@@ -46,25 +46,37 @@ class ContextMenuDisplayers:
         else:
             self.log_menu.tk_popup(event.x_root,event.y_root)
 
+    def disable_moveup_movedown(self):
+        for i in (3,4):
+            self.patterns_menu.entryconfig(i, state='disabled')
 
     def show_patterns_menu(self ,event : Event, app : bool=False) -> None:
         selected = self.patterns_list.curselection()
         if selected:
-            if len(selected)>1:
-                for i in (1,3):
+            if len(selected) > 1:
+                for i in (1,6):
                     self.patterns_menu.entryconfig(i,state='disabled')
 
-                for i in range(4,6):
+                for i in (7,8):
                     self.patterns_menu.entryconfig(i,state='active')
+
+                self.disable_moveup_movedown()
 
             else:
                 self.patterns_menu.entryconfig(1,state='active')
-                for i in range(3,6):
+
+                for i in (6,7,8):
                     self.patterns_menu.entryconfig(i,state='active')
+
+                for i in (3,4):
+                    self.patterns_menu.entryconfig(i, state='active')
         else:
             self.patterns_menu.entryconfig(1,state='disabled')
-            for i in range(3,6):
+
+            for i in (6,7,8):
                 self.patterns_menu.entryconfig(i,state='disabled')
+
+            self.disable_moveup_movedown()
 
         if app:
             self.patterns_menu.tk_popup(self.patterns_list.winfo_rootx()+100, self.patterns_list.winfo_rooty()+100)

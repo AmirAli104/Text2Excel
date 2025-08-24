@@ -1,7 +1,7 @@
 from tkinter.ttk import Entry
 from tkinter import Menu
 from utils import *
-from gui.menu_commands import *
+from gui.context_menu_commands import *
 
 class CommandsObjects:
     log_menu_commands = None
@@ -30,10 +30,15 @@ def browse_files(widget : Entry, is_input_file_entry : bool) -> None:
         widget.insert('end',file_path)
 
 class MenuCreators:
+
+    @staticmethod
     def create_patterns_menu() -> Menu:
         menu = Menu(tearoff=False,**MENU_COLOR_ARGS)
         menu.add_command(label='Add Pattern', command=CommandsObjects.patterns_menu_commands.add_pattern,accelerator='Ctrl+Shift+A')
         menu.add_command(label='Insert Pattern',command=CommandsObjects.patterns_menu_commands.insert_pattern,accelerator='Ctrl+I')
+        menu.add_separator()
+        menu.add_command(label='Move Up', command = CommandsObjects.patterns_menu_commands.move_selected)
+        menu.add_command(label='Move Down', command = lambda : CommandsObjects.patterns_menu_commands.move_selected(up = False))
         menu.add_separator()
         menu.add_command(label='Edit selected', command=CommandsObjects.patterns_menu_commands.edit_selected,accelerator='F2')
         menu.add_command(label='Delete selected', command=CommandsObjects.patterns_menu_commands.delete_selected,accelerator='Delete')
@@ -44,7 +49,8 @@ class MenuCreators:
         menu.add_command(label='Import from file', command=CommandsObjects.patterns_menu_commands.import_from_file,accelerator='Ctrl+Shift+I')
         menu.add_command(label='Export to file', command=CommandsObjects.patterns_menu_commands.export_to_file,accelerator='Ctrl+E')
         return menu
-
+    
+    @staticmethod
     def create_log_menu() -> Menu:
         menu = Menu(tearoff=False,**MENU_COLOR_ARGS)
         menu.add_command(label='Copy log',command=CommandsObjects.log_menu_commands.copy_log,accelerator='Ctrl+C')
@@ -52,7 +58,8 @@ class MenuCreators:
         menu.add_separator()
         menu.add_command(label=LOG_MODE[0],command=CommandsObjects.log_menu_commands.toggle_log)
         return menu
-
+    
+    @staticmethod
     def create_entry_menu(widget : Entry, excel_var, is_file_entry : bool=True,is_output_file_entry : bool=True) -> Menu:
         menu = Menu(tearoff=False,**MENU_COLOR_ARGS)
         menu.add_command(label='Select All', accelerator='Ctrl+A',command=lambda : widget.select_range(0,'end'))

@@ -16,7 +16,7 @@ from tkinter import ttk
 import os
 
 from utils import *
-from gui.menu_commands import *
+from gui.context_menu_commands import *
 from gui.context_menu_displayers import *
 from gui.context_menu_creators import *
 from extractors import DataExtractor

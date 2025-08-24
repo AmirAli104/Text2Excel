@@ -22,7 +22,24 @@ class PatternsMenuCommands:
         if len(selected) == 1:
             new_pattern = self.get_pattern()
             self.patterns_list.insert(selected[0],new_pattern)
+            
+    def swap_up(self, selected_index : int):
+        next_index = selected_index - 1
 
+        next_item = self.patterns_list.get(selected_index)
+        self.patterns_list.insert(next_index, next_item)
+        self.patterns_list.delete(selected_index + 1)
+
+    def move_selected(self, event : Event = None , up = True):
+        selected_index = self.patterns_list.curselection()[0]
+
+        if up:
+            self.swap_up(selected_index)
+            self.patterns_list.selection_set(selected_index - 1)
+
+        else:
+            self.swap_up(selected_index + 1)
+        
     def edit_selected(self, event : Event=None) -> None:
         index = self.patterns_list.curselection()
         if len(index) == 1:

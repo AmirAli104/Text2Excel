@@ -23,6 +23,23 @@ class PatternsMenuCommands:
             new_pattern = self.get_pattern()
             self.patterns_list.insert(selected[0],new_pattern)
 
+    def swap_up(self, selected_index : int):
+        next_index = selected_index - 1
+
+        next_item = self.patterns_list.get(selected_index)
+        self.patterns_list.insert(next_index, next_item)
+        self.patterns_list.delete(selected_index + 1)
+
+    def move_selected(self, event : Event = None , up = True):
+        selected_index = self.patterns_list.curselection()[0]
+
+        if up:
+            self.swap_up(selected_index)
+            self.patterns_list.selection_set(selected_index - 1)
+
+        else:
+            self.swap_up(selected_index + 1)
+
     def edit_selected(self, event : Event=None) -> None:
         index = self.patterns_list.curselection()
         if len(index) == 1:
@@ -36,7 +53,7 @@ class PatternsMenuCommands:
         selected = self.patterns_list.curselection()
         if selected:
             self.patterns_list.delete(selected[0],selected[-1])
-    
+
     def delete_all(self, event : Event=None) -> None:
         self.patterns_list.delete(0,'end')
 
@@ -77,7 +94,7 @@ class LogMenuCommands:
 
     def toggle_log(self) -> None:
         WithLogging.with_logging = not WithLogging.with_logging
-        
+
         mode = self.log_menu.entrycget(3,'label')
 
         if mode == LOG_MODE[0]:
@@ -127,7 +144,7 @@ class CSVExcelSwitchFunctions:
     def hide_only_excel_required_widgets(self) -> None: # sheet_name_entry, sheet_name_lbl, exact_cb
         if self.exact_cb.winfo_ismapped():
             self.hide_exact_order_cb()
-        
+
         self.sheet_name_lbl.grid_remove()
         self.sheet_name_entry.grid_remove()
 
