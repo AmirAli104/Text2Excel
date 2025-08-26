@@ -43,3 +43,7 @@ Install `pyinstaller` if needed:
 ```bash
 pip install pyinstaller
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
