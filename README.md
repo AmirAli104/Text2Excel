@@ -1,48 +1,45 @@
 # Text2Excel
 
-Text2Excel is a GUI desktop application that can extract data from a text file and put them in an Excel or CSV file using regular expression (regex) patterns. It uses python `re` module.
+**Text2Excel** is a desktop GUI application that extracts data from text files and saves them into Excel or CSV files using regular expression (regex) patterns. It is built with Python’s `re` module.
 
-You should right click on the patterns widget and use the options in the context menu to add the patterns. You can choose to put the data in columns or rows and in which sheet.
+## Features
+- Add regex patterns via the **patterns widget** (right-click → context menu).  
+- Choose whether data goes into **columns** or **rows**, and select the target sheet.  
+- **Exact Order** option:  
+  - Disabled → places data starting from the last filled row in the file.  
+  - Enabled → aligns data strictly with existing entries (only in “put in columns” mode).  
+- Support for regex **groups**:  
+  - Example:  
+    ```regex
+    \w{5}(\d)
+    ```  
+    This matches 5 word characters followed by a digit, but only the digit will be saved if wrapped in a group.  
+- Export to **Excel (.xlsx)** or **CSV (.csv)** (CSV available via the output file context menu).  
 
-It has an option called 'Exact Order'. If you have not enabled this option, it starts placing the data from the last row of the Excel file in which there is data, and does not check the last cell of each column, but if you enable this option, it checks each column and puts data exactly along the previous data. It is only active in 'put in columns' mode.
+## Installation
+This project requires `openpyxl`. Install it with:
 
-If you want to put only a part of pattern in the file you should make a pattern with a group. It can be either a named or unnamed group like this:
-
-```
-\w{5}(\d)
-```
-
-The above pattern finds a text that has 5 word chracters and a digit after it. It only puts the digit in the excel file. But if you don't place the digit pattern in a group it puts both word characters and digit in the the excel file.
-
-If you want to save data in a CSV file you need to use the options at the bottom of the output file context menu.
-
-Installation
----
-It uses `openpyxl` module so you need to install it using this command:
-
-```
+```bash
 python -m pip install openpyxl
 ```
 
-I was using `openpyxl-3.1.5` when I wrote this program. To install it:
-
-```
+Version used during development:
+```bash
 python -m pip install openpyxl==3.1.5
 ```
 
-And then you can run `src/text2excel.py`
-
-Build
----
-To build the program go to the `build` directory and execute `text2excel.spec`:
-
+Run the app with:
+```bash
+python src/text2excel.py
 ```
+## Build
+To build an executable with `pyinstaller`:
+```bash
 cd build
 pyinstaller text2excel.spec
 ```
 
-To install `pyinstaller`:
-
-```
+Install `pyinstaller` if needed:
+```bash
 pip install pyinstaller
 ```
