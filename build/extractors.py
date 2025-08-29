@@ -12,8 +12,11 @@ class CSVFileExtractor:
     def __init__(self, col_var):
         self.col_var = col_var
 
-    def create_csv_file(self, output_file : str, patterns : Patterns ,content : str) -> str | None:
+    def export_extracted_data_to_csv(self, output_file : str, patterns : Patterns ,content : str) -> str | None:
         extracted_data = DataExtractor.extract_data(patterns,content)
+
+        if isinstance(extracted_data[0][0], tuple):
+            raise TypeError
 
         if WithLogging.with_logging:
                 extracted_data_copy = extracted_data
@@ -24,7 +27,7 @@ class CSVFileExtractor:
         with open(output_file,'a',newline='',encoding=ENCODING) as f:
             writer = csv.writer(f)
             writer.writerows(extracted_data)
-        
+
         if WithLogging.with_logging:
             return DataExtractor.log_found_data(extracted_data_copy)
 
@@ -65,12 +68,12 @@ class ExcelFileExtractor:
             columns_list_index += 1
             find_max_index += 1
 
-    def create_excel_file(self, output_file : str, sheet_name : str, patterns : Patterns, content : str) -> str | None:
+    def export_extracted_data_to_excel(self, output_file : str, sheet_name : str, patterns : Patterns, content : str) -> str | None:
                 if not os.path.isfile(output_file):
                     wb = openpyxl.Workbook()
                     wb.save(output_file)
                     wb.close()
-                
+
                 sheet_name = sheet_name.title()
 
                 wb = openpyxl.load_workbook(output_file)
@@ -87,7 +90,7 @@ class ExcelFileExtractor:
 
                 if self.col_var.get() and not self.exact_var.get():
                     extracted_data = DataExtractor.create_column_order(extracted_data)
-                
+
                 if not self.exact_var.get(): # The codes in this if statement will not be executed if 'put in rows' is enabled
                     ExcelFileExtractor.put_data_in_excel_without_exact_order(extracted_data,sheet)
                 else:
@@ -103,7 +106,7 @@ class DataExtractor:
     def __init__(self, excel_var, log_text, col_var, exact_var):
         self.log_text = log_text
         self.excel_var = excel_var
-        
+
         self.excel_extractor = ExcelFileExtractor(col_var, exact_var)
         self.csv_extractor = CSVFileExtractor(col_var)
 
@@ -127,28 +130,31 @@ class DataExtractor:
                         raise ValueError('The input file cannot be a binary file')
 
                 assert output_file, 'The name of output file is required.'
-                
+
                 output_file_extention = os.path.splitext(output_file)[1].lower()
 
                 if self.excel_var.get():
                     if output_file_extention in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
-                        log_string = self.excel_extractor.create_excel_file(output_file,sheet_name,patterns,content)
+                        log_string = self.excel_extractor.export_extracted_data_to_excel(output_file,sheet_name,patterns,content)
                     else:
                         raise ValueError('The output file format is not supported. It should be .xlsx, .xlsm, .xltx or .xltm')
 
                 else:
-                    log_string = self.csv_extractor.create_csv_file(output_file,patterns,content)
+                    log_string = self.csv_extractor.export_extracted_data_to_csv(output_file,patterns,content)
 
                 if WithLogging.with_logging:
                     log_string += f'\n{output_file!r} saved.' + '\n'
                     self.log_text.config(state='normal')
                     self.log_text.delete('1.0','end')
                     self.log_text.insert('end', log_string)
-                    self.log_text.config(state='disabled')                    
+                    self.log_text.config(state='disabled')
                     self.log_text.see('end')
 
             except (FileNotFoundError, AssertionError, PermissionError, ValueError, re.PatternError) as err:
                 show_error(err)
+
+            except TypeError as err:
+                show_error("You cannot place multiple groups in a pattern")
 
     @staticmethod
     def log_found_data(extracted_data_copy : ExtractedData) -> str:
@@ -158,7 +164,7 @@ class DataExtractor:
             log_string += '\n'.join(data_list) + '\n'
 
         return log_string
-    
+
     @staticmethod
     def create_column_order(extracted_data : ExtractedData) -> tuple[tuple[str]]:
         max_len = max([len(data_list) for data_list in extracted_data])
@@ -166,5 +172,5 @@ class DataExtractor:
         for data_list in extracted_data:
             for _ in range(max_len - len(data_list)):
                 data_list.append('')
-            
+
         return tuple(zip(*extracted_data))

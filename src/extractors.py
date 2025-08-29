@@ -12,8 +12,11 @@ class CSVFileExtractor:
     def __init__(self, col_var):
         self.col_var = col_var
 
-    def create_csv_file(self, output_file : str, patterns : Patterns ,content : str) -> str | None:
+    def export_extracted_data_to_csv(self, output_file : str, patterns : Patterns ,content : str) -> str | None:
         extracted_data = DataExtractor.extract_data(patterns,content)
+
+        if isinstance(extracted_data[0][0], tuple):
+            raise TypeError
 
         if WithLogging.with_logging:
                 extracted_data_copy = extracted_data
@@ -65,7 +68,7 @@ class ExcelFileExtractor:
             columns_list_index += 1
             find_max_index += 1
 
-    def create_excel_file(self, output_file : str, sheet_name : str, patterns : Patterns, content : str) -> str | None:
+    def export_extracted_data_to_excel(self, output_file : str, sheet_name : str, patterns : Patterns, content : str) -> str | None:
                 if not os.path.isfile(output_file):
                     wb = openpyxl.Workbook()
                     wb.save(output_file)
@@ -132,12 +135,12 @@ class DataExtractor:
 
                 if self.excel_var.get():
                     if output_file_extention in ['.xlsx', '.xlsm', '.xltx', '.xltm']:
-                        log_string = self.excel_extractor.create_excel_file(output_file,sheet_name,patterns,content)
+                        log_string = self.excel_extractor.export_extracted_data_to_excel(output_file,sheet_name,patterns,content)
                     else:
                         raise ValueError('The output file format is not supported. It should be .xlsx, .xlsm, .xltx or .xltm')
 
                 else:
-                    log_string = self.csv_extractor.create_csv_file(output_file,patterns,content)
+                    log_string = self.csv_extractor.export_extracted_data_to_csv(output_file,patterns,content)
 
                 if WithLogging.with_logging:
                     log_string += f'\n{output_file!r} saved.' + '\n'
@@ -149,6 +152,9 @@ class DataExtractor:
 
             except (FileNotFoundError, AssertionError, PermissionError, ValueError, re.PatternError) as err:
                 show_error(err)
+
+            except TypeError as err:
+                show_error("You cannot place multiple groups in a pattern")
 
     @staticmethod
     def log_found_data(extracted_data_copy : ExtractedData) -> str:
