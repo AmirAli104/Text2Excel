@@ -160,6 +160,8 @@ if os.name == "posix":
 
 patterns_list.bind('<Control-A>', CommandsObjects.patterns_menu_commands.add_pattern)
 patterns_list.bind('<Control-i>', CommandsObjects.patterns_menu_commands.insert_pattern)
+patterns_list.bind('<k>', CommandsObjects.patterns_menu_commands.move_selected)
+patterns_list.bind('<j>', lambda event : CommandsObjects.patterns_menu_commands.move_selected(up = False))
 patterns_list.bind('<F2>', CommandsObjects.patterns_menu_commands.edit_selected)
 patterns_list.bind('<Delete>', CommandsObjects.patterns_menu_commands.delete_selected)
 patterns_list.bind('<Control-d>', CommandsObjects.patterns_menu_commands.delete_selected)

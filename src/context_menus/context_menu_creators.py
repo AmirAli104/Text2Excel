@@ -39,8 +39,8 @@ class MenuCreators:
         menu.add_command(label='Add Pattern', command=CommandsObjects.patterns_menu_commands.add_pattern,accelerator='Ctrl+Shift+A') # 0
         menu.add_command(label='Insert Pattern',command=CommandsObjects.patterns_menu_commands.insert_pattern,accelerator='Ctrl+I') # 1
         menu.add_separator() # 2
-        menu.add_command(label='Move Up', command = CommandsObjects.patterns_menu_commands.move_selected) # 3
-        menu.add_command(label='Move Down', command = lambda : CommandsObjects.patterns_menu_commands.move_selected(up = False)) # 4
+        menu.add_command(label='Move Up', command = CommandsObjects.patterns_menu_commands.move_selected, accelerator='K') # 3
+        menu.add_command(label='Move Down', command = lambda : CommandsObjects.patterns_menu_commands.move_selected(up = False), accelerator='J') # 4
         menu.add_separator() # 5
         menu.add_command(label='Edit selected', command=CommandsObjects.patterns_menu_commands.edit_selected,accelerator='F2') # 6
         menu.add_command(label='Delete selected', command=CommandsObjects.patterns_menu_commands.delete_selected,accelerator='Delete') # 7
