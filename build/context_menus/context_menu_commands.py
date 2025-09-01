@@ -34,6 +34,9 @@ class PatternsMenuCommands:
         selected_index = self.patterns_list.curselection()[0]
 
         if up:
+            if selected_index == 0:
+                return
+
             self.swap_up(selected_index)
             self.patterns_list.selection_set(selected_index - 1)
 
