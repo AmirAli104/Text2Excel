@@ -15,7 +15,7 @@
     ```  
     This matches 5 word characters followed by a digit, but only the digit will be saved if wrapped in a group.  
 - Export to **Excel (.xlsx)** or **CSV (.csv)** (CSV available via the output file context menu).
-- 
+
 **note: You cannot place multiple groups in one pattern**
 
 ## Installation
