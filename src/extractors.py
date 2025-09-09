@@ -121,6 +121,8 @@ class DataExtractor:
 
     def prepare_to_extract_data(self, output_file : str, input_file : str, sheet_name : str, patterns : Patterns) -> None:
             try:
+                log_string = ''
+
                 assert patterns, 'There is no patterns to extract data'
                 assert output_file, 'The name of output file is required.'
 
@@ -148,7 +150,7 @@ class DataExtractor:
                 # --- handling the log ----
 
                 if WithLogging.with_logging:
-                    self.log_found_data()
+                    self.log_found_data(log_string, output_file)
 
             except (FileNotFoundError, AssertionError, PermissionError, ValueError, re.PatternError) as err:
                 show_error(err)
@@ -165,7 +167,7 @@ class DataExtractor:
 
         return log_string
 
-    def log_found_data(self):
+    def log_found_data(self, log_string : str, output_file : str):
         log_string += f'\n{output_file!r} saved.' + '\n'
         self.log_text.config(state='normal')
         self.log_text.delete('1.0','end')
