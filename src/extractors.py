@@ -29,7 +29,7 @@ class CSVFileExtractor:
             writer.writerows(extracted_data)
         
         if WithLogging.with_logging:
-            return DataExtractor.log_found_data(extracted_data_copy)
+            return DataExtractor.get_extracted_data_string(extracted_data_copy)
 
 class ExcelFileExtractor:
     def __init__(self, col_var, exact_var):
@@ -100,7 +100,7 @@ class ExcelFileExtractor:
                 wb.close()
 
                 if WithLogging.with_logging:
-                    return DataExtractor.log_found_data(extracted_data_copy)
+                    return DataExtractor.get_extracted_data_string(extracted_data_copy)
 
 class DataExtractor:
     def __init__(self, excel_var, log_text, col_var, exact_var):
@@ -122,6 +122,9 @@ class DataExtractor:
     def prepare_to_extract_data(self, output_file : str, input_file : str, sheet_name : str, patterns : Patterns) -> None:
             try:
                 assert patterns, 'There is no patterns to extract data'
+                assert output_file, 'The name of output file is required.'
+
+                # --- read the content of input file ---
 
                 with open(input_file,encoding=ENCODING) as f:
                     try:
@@ -129,7 +132,7 @@ class DataExtractor:
                     except UnicodeDecodeError:
                         raise ValueError('The input file cannot be a binary file')
 
-                assert output_file, 'The name of output file is required.'
+                # --- deciding what to do with the output file ---
                 
                 output_file_extention = os.path.splitext(output_file)[1].lower()
 
@@ -141,14 +144,11 @@ class DataExtractor:
 
                 else:
                     log_string = self.csv_extractor.export_extracted_data_to_csv(output_file,patterns,content)
+                
+                # --- handling the log ----
 
                 if WithLogging.with_logging:
-                    log_string += f'\n{output_file!r} saved.' + '\n'
-                    self.log_text.config(state='normal')
-                    self.log_text.delete('1.0','end')
-                    self.log_text.insert('end', log_string)
-                    self.log_text.config(state='disabled')                    
-                    self.log_text.see('end')
+                    self.log_found_data()
 
             except (FileNotFoundError, AssertionError, PermissionError, ValueError, re.PatternError) as err:
                 show_error(err)
@@ -157,13 +157,21 @@ class DataExtractor:
                 show_error("You cannot place multiple groups in a pattern")
 
     @staticmethod
-    def log_found_data(extracted_data_copy : ExtractedData) -> str:
+    def get_extracted_data_string(extracted_data_copy : ExtractedData) -> str:
         log_string = ''
 
         for data_list in extracted_data_copy:
             log_string += '\n'.join(data_list) + '\n'
 
         return log_string
+
+    def log_found_data(self):
+        log_string += f'\n{output_file!r} saved.' + '\n'
+        self.log_text.config(state='normal')
+        self.log_text.delete('1.0','end')
+        self.log_text.insert('end', log_string)
+        self.log_text.config(state='disabled')
+        self.log_text.see('end')
     
     @staticmethod
     def create_column_order(extracted_data : ExtractedData) -> tuple[tuple[str]]:
