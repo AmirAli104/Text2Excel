@@ -2,14 +2,14 @@
 Text2Excel is a GUI desktop application that can extract data from a text file
 and put them in an Excel or CSV file using regular expression (regex) patterns.
 
-version 2.7.2
+version 2.8.0
 
 https://github.com/AmirAli104/Text2Excel
 
 License: MIT License
 """
 
-__version__ = '2.7.2'
+__version__ = '2.8.0'
 
 import tkinter as tk
 from tkinter import ttk
