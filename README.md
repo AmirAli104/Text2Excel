@@ -2,6 +2,8 @@
 
 **Text2Excel** is a desktop GUI application that extracts data from text files and saves them into Excel or CSV files using regular expression (regex) patterns. It is built with Python’s `re` module.
 
+![screenshot](assets/screenshot.png)
+
 ## Features
 - Add regex patterns via the **patterns widget** (right-click → context menu).  
 - Choose whether data goes into **columns** or **rows**, and select the target sheet.  
@@ -49,3 +51,6 @@ pip install pyinstaller
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+
+[def]: assets/screenshot.png
